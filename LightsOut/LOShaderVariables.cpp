@@ -1,0 +1,186 @@
+/*
+Copyright (c) 2015 Sixshaman
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and
+to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
+BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
+#include "LOShaderVariables.hpp"
+#include "Util.hpp"
+#include "LOTextures.hpp"
+#include "RenderStates.hpp"
+
+template<typename CBufType>
+inline void UpdateBuffer(ID3D11Buffer *destBuf, CBufType &srcBuf, ID3D11DeviceContext *dc)
+{
+	D3D11_MAPPED_SUBRESOURCE mappedbuffer;
+	dc->Map(destBuf, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedbuffer);
+
+	CBufType *data = reinterpret_cast<CBufType*>(mappedbuffer.pData);
+
+	memcpy(data, &srcBuf, sizeof(CBufType));
+
+	dc->Unmap(destBuf, 0);
+}
+
+#pragma region ComputeField
+
+ID3D11Buffer* ComputeFieldVariables::mCSCbuffer = nullptr;
+
+CS_CBUFFER ComputeFieldVariables::mCSCBufferCopy = {};
+
+void ComputeFieldVariables::UpdateCSCBuffer(ID3D11DeviceContext *dc)
+{
+	UpdateBuffer(mCSCbuffer, mCSCBufferCopy, dc);
+}
+
+bool ComputeFieldVariables::InitAll(ID3D11Device *device)
+{
+	ZeroMemory(&mCSCBufferCopy, sizeof(CS_CBUFFER));
+
+	D3D11_BUFFER_DESC cBuffer;
+	cBuffer.ByteWidth = sizeof(CS_CBUFFER);
+	cBuffer.Usage = D3D11_USAGE_DYNAMIC;
+	cBuffer.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	cBuffer.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	cBuffer.MiscFlags = 0;
+	cBuffer.StructureByteStride = 0;
+
+	D3D11_SUBRESOURCE_DATA cbInitData;
+	cbInitData.pSysMem = &mCSCBufferCopy;
+	cbInitData.SysMemPitch = 0;
+	cbInitData.SysMemSlicePitch = 0;
+
+	ASSERT_ERR(device->CreateBuffer(&cBuffer, &cbInitData, &mCSCbuffer));
+
+	return true;
+}
+
+void ComputeFieldVariables::DestroyAll()
+{
+	SafeRelease(mCSCbuffer);
+}
+
+void ComputeFieldVariables::SetCSVariables(ID3D11DeviceContext *dc)
+{
+	UpdateCSCBuffer(dc);
+
+	dc->CSSetConstantBuffers(0, 1, &mCSCbuffer);
+
+	ID3D11ShaderResourceView *SRVs[2] = {LOTextures::getFieldSRV(), LOTextures::getSolveSRV()};
+	dc->CSSetShaderResources(0, 2, SRVs);
+
+	ID3D11UnorderedAccessView *UAVs[1] = {LOTextures::getResultUAV()};
+	dc->CSSetUnorderedAccessViews(0, 1, UAVs, nullptr);
+}
+
+void ComputeFieldVariables::DisableVariables(ID3D11DeviceContext *dc)
+{
+	ID3D11Buffer* nullcbuffer = {nullptr};
+	dc->CSSetConstantBuffers(0, 1, &nullcbuffer);
+
+	ID3D11ShaderResourceView *nullsrv[2] = {nullptr, nullptr};
+	dc->CSSetShaderResources(0, 2, nullsrv);
+
+	ID3D11UnorderedAccessView *nulluav[1] = {nullptr};
+	dc->CSSetUnorderedAccessViews(0, 1, nulluav, nullptr);
+}
+
+void ComputeFieldVariables::SetFieldSize(UINT fieldSize)
+{
+	mCSCBufferCopy.FieldSize = fieldSize;
+}
+
+void ComputeFieldVariables::SetCellSize(UINT cellSize)
+{
+	mCSCBufferCopy.CellSize = cellSize;
+}
+
+void ComputeFieldVariables::SetSolveVisible(bool solveVisible)
+{
+	mCSCBufferCopy.SolveVisible = solveVisible;
+}
+
+void ComputeFieldVariables::SetHintTurn(USHORT strokeX, USHORT strokeY)
+{
+	mCSCBufferCopy.CompressedTurn = ((UINT)strokeX << 16) | strokeY;
+}
+
+void ComputeFieldVariables::SetColorNone(XMVECTOR colorNone)
+{
+	DirectX::XMStoreFloat4(&mCSCBufferCopy.ColorNone, colorNone);
+}
+
+void ComputeFieldVariables::SetColorEnabled(XMVECTOR colorEnabled)
+{
+	DirectX::XMStoreFloat4(&mCSCBufferCopy.ColorEnabled,colorEnabled);
+}
+
+void ComputeFieldVariables::SetColorSolved(XMVECTOR colorSolved)
+{
+	DirectX::XMStoreFloat4(&mCSCBufferCopy.ColorSolved, colorSolved);
+}
+
+void ComputeFieldVariables::SetColorBetween(XMVECTOR colorBetween)
+{
+	DirectX::XMStoreFloat4(&mCSCBufferCopy.ColorBetween, colorBetween);
+}
+
+void ComputeFieldVariables::SetColorBetweenAsNone()
+{
+	mCSCBufferCopy.ColorBetween = mCSCBufferCopy.ColorNone;
+}
+
+void ComputeFieldVariables::SetColorBetweenAsEnabled()
+{
+	mCSCBufferCopy.ColorBetween = mCSCBufferCopy.ColorEnabled;
+}
+
+void ComputeFieldVariables::SetColorBetweenAsSolved()
+{
+	mCSCBufferCopy.ColorBetween = mCSCBufferCopy.ColorSolved;
+}
+
+#pragma endregion ComputeField
+
+#pragma region DrawScreen
+
+bool DrawScreenVariables::InitAll(ID3D11Device *device)
+{
+	return true;
+}
+
+void DrawScreenVariables::DestroyAll()
+{
+}
+
+void DrawScreenVariables::SetAllVariables(ID3D11DeviceContext *dc)
+{
+	ID3D11ShaderResourceView* targetTex = LOTextures::getResultSRV();
+	dc->PSSetShaderResources(0, 1, &targetTex);
+
+	ID3D11SamplerState* TextureSS = RenderStates::TextureSS();
+	dc->PSSetSamplers(0, 1, &TextureSS);
+}
+
+void DrawScreenVariables::DisableVariables(ID3D11DeviceContext* dc)
+{
+	ID3D11ShaderResourceView *nullsrv[1] = {nullptr};
+	dc->PSSetShaderResources(0, 1, nullsrv);
+
+	ID3D11SamplerState *nullsampler[1] = {nullptr};
+	dc->PSSetSamplers(0, 1, nullsampler);
+}
+
+#pragma endregion DrawScreen
