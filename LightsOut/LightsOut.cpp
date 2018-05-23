@@ -29,12 +29,12 @@ SOFTWARE.
 #define IS_EIGVEC_COUNTING 0x08 //Bycicly, but cool thread realization #2
 #define IS_PERIO4_COUNTING 0x10 //Bycicly, but cool thread realization #3
 
-#define MENU_THEME_MOTHER_RUSSIA	  1001
-#define MENU_THEME_RED_EXPLOSION	  1002
-#define MENU_THEME_NEON_XXL			  1003
-#define MENU_THEME_CREAMED_STRAWBERRY 1004
-#define MENU_THEME_HARD_TO_SEE	      1005
-#define MENU_THEME_BLACK_AND_WHITE    1006
+#define MENU_THEME_RED_EXPLOSION	  1001
+#define MENU_THEME_NEON_XXL			  1002
+#define MENU_THEME_CREAMED_STRAWBERRY 1003
+#define MENU_THEME_HARD_TO_SEE	      1004
+#define MENU_THEME_BLACK_AND_WHITE    1005
+#define MENU_THEME_PETYA              1006
 
 #define MENU_THEME_BLACK_EDGES		  1100
 #define MENU_THEME_GRAY_EDGES		  1101
@@ -214,12 +214,12 @@ bool LightsOutApp::InitMenu()
 	AppendMenu(mMainMenu, MF_POPUP | MF_STRING, (UINT)MenuView,  L"&View");
 	AppendMenu(mMainMenu, MF_POPUP | MF_STRING, (UINT)MenuFile,  L"&File");
 
-	AppendMenu(MenuTheme, MF_STRING, MENU_THEME_MOTHER_RUSSIA,		L"Mother Russia");
 	AppendMenu(MenuTheme, MF_STRING, MENU_THEME_RED_EXPLOSION,		L"Red explosion");
 	AppendMenu(MenuTheme, MF_STRING, MENU_THEME_NEON_XXL,			L"Neon XXL");
 	AppendMenu(MenuTheme, MF_STRING, MENU_THEME_CREAMED_STRAWBERRY, L"Creamed strawberry");
 	AppendMenu(MenuTheme, MF_STRING, MENU_THEME_HARD_TO_SEE,	    L"Hard to see");
 	AppendMenu(MenuTheme, MF_STRING, MENU_THEME_BLACK_AND_WHITE,	L"Black and white");
+	AppendMenu(MenuTheme, MF_STRING, MENU_THEME_PETYA,              L"Petya");
 	AppendMenu(MenuTheme, MF_MENUBREAK, 0, nullptr);
 
 	AppendMenu(MenuTheme, MF_STRING, MENU_THEME_BLACK_EDGES, L"Set black edges");
@@ -380,13 +380,6 @@ void LightsOutApp::OnMenuItem(WPARAM State)
 {
 	switch(LOWORD(State))
 	{
-	case MENU_THEME_MOTHER_RUSSIA:
-	{
-		ComputeFieldVariables::SetColorSolved(DirectX::Colors::Red);
-		ComputeFieldVariables::SetColorEnabled(DirectX::Colors::Blue);
-		ComputeFieldVariables::SetColorNone(DirectX::Colors::White);
-		break;
-	}
 	case MENU_THEME_RED_EXPLOSION:
 	{
 		ComputeFieldVariables::SetColorSolved(DirectX::Colors::Red);
@@ -420,6 +413,13 @@ void LightsOutApp::OnMenuItem(WPARAM State)
 		ComputeFieldVariables::SetColorSolved(DirectX::Colors::DimGray);
 		ComputeFieldVariables::SetColorEnabled(DirectX::Colors::White);
 		ComputeFieldVariables::SetColorNone(DirectX::Colors::Black);
+		break;
+	}
+	case MENU_THEME_PETYA:
+	{
+		ComputeFieldVariables::SetColorSolved(DirectX::XMVectorSet(0.639f, 0.694f, 0.745f, 1.0f));
+		ComputeFieldVariables::SetColorEnabled(DirectX::XMVectorSet(0.980f, 0.984f, 0.988f, 1.0f));
+		ComputeFieldVariables::SetColorNone(DirectX::XMVectorSet(0.459f, 0.733f, 0.992f, 1.0f));
 		break;
 	}
 	case MENU_THEME_BLACK_EDGES:
