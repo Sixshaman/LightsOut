@@ -1,21 +1,3 @@
-/*
-Copyright (c) 2015 Sixshaman
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
-rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and
-to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
-BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
-ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-*/
-
 #include "LOTextures.hpp"
 #include "Util.hpp"
 
@@ -23,19 +5,15 @@ ID3D11ShaderResourceView* LOTextures::mFieldSRV = nullptr;
 ID3D11ShaderResourceView* LOTextures::mSolveSRV = nullptr; 
 ID3D11ShaderResourceView* LOTextures::mResultSRV = nullptr;
 ID3D11UnorderedAccessView* LOTextures::mResultUAV = nullptr; 
+ID3D11ShaderResourceView* LOTextures::mResultToSaveSRV = nullptr;
+ID3D11UnorderedAccessView* LOTextures::mResultToSaveUAV = nullptr;
 ID3D11Texture2D* LOTextures::mResultCopy = nullptr;
 ID3D11Texture1D* LOTextures::mFieldTex = nullptr;
 ID3D11Texture1D* LOTextures::mSolveTex = nullptr;
 
 bool LOTextures::InitSRVs(boost::dynamic_bitset<UINT> field, boost::dynamic_bitset<UINT> solve, UINT fieldSize, ID3D11Device* device)
 {
-	SafeRelease(mFieldSRV);
-	SafeRelease(mSolveSRV);
-	SafeRelease(mResultSRV);
-	SafeRelease(mResultUAV);
-	SafeRelease(mFieldTex);
-	SafeRelease(mSolveTex);
-	SafeRelease(mResultCopy);
+	DestroyAll();
 
 	UINT maxFieldSize = (UINT)ceilf((MAXIMUM_FIELD_SIZE * MAXIMUM_FIELD_SIZE) / 32.0f); //Even the field of maximum size can fit here
 
@@ -102,6 +80,8 @@ void LOTextures::DestroyAll()
 	SafeRelease(mSolveSRV);
 	SafeRelease(mResultSRV);
 	SafeRelease(mResultUAV);
+	SafeRelease(mResultToSaveSRV);
+	SafeRelease(mResultToSaveUAV);
 	SafeRelease(mFieldTex);
 	SafeRelease(mSolveTex);
 	SafeRelease(mResultCopy);

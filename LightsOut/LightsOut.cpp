@@ -1,21 +1,3 @@
-/*
-Copyright (c) 2015 Sixshaman
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
-rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and
-to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
-BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
-ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-*/
-
 #include "LightsOut.hpp"
 #include "Util.hpp"
 #include "RenderStates.hpp"
@@ -50,6 +32,8 @@ SOFTWARE.
 #define MENU_VIEW_CHAINS			  2004
 
 #define MENU_FILE_SAVE_STATE		  3001
+#define MENU_FILE_SAVE_STATE_4X		  3002
+#define MENU_FILE_SAVE_STATE_16X	  3003
 
 namespace
 {
@@ -236,7 +220,9 @@ bool LightsOutApp::InitMenu()
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_RAINDROPS, L"Raindrops");
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_CHAINS,    L"Chains");
 
-	AppendMenu(MenuFile, MF_STRING, MENU_FILE_SAVE_STATE, L"Save state...");
+	AppendMenu(MenuFile, MF_STRING, MENU_FILE_SAVE_STATE,     L"Save state...");
+	AppendMenu(MenuFile, MF_STRING, MENU_FILE_SAVE_STATE_4X,  L"Save state 4x...");
+	AppendMenu(MenuFile, MF_STRING, MENU_FILE_SAVE_STATE_16X, L"Save state 16x...");
 
 	SetMenu(mMainWnd, mMainMenu);
 
@@ -473,6 +459,16 @@ void LightsOutApp::OnMenuItem(WPARAM State)
 		break;
 	}
 	case MENU_FILE_SAVE_STATE:
+	{
+		LightsOutSaver::SaveState(md3dContext, mMainWnd);
+		break;
+	}
+	case MENU_FILE_SAVE_STATE_4X:
+	{
+		LightsOutSaver::SaveState(md3dContext, mMainWnd);
+		break;
+	}
+	case MENU_FILE_SAVE_STATE_16X:
 	{
 		LightsOutSaver::SaveState(md3dContext, mMainWnd);
 		break;
