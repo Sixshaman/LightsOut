@@ -17,7 +17,7 @@ struct PointOnField
 	bool operator ==(PointOnField T) { return (field_X == T.field_X && field_Y == T.field_Y); };
 };
 
-typedef std::vector<boost::dynamic_bitset<UINT>> LOMatrix;
+typedef std::vector<boost::dynamic_bitset<uint32_t>> LOMatrix;
 
 class Solver
 {
@@ -28,8 +28,8 @@ public:
 	void SolveGame(LightsOutGame &game);
 	PointOnField GetHint(LightsOutGame &game);
 
-	boost::dynamic_bitset<UINT> GetResolvent(LightsOutGame &game);
-	boost::dynamic_bitset<UINT> GetInverseResolvent(LightsOutGame &game);
+	boost::dynamic_bitset<uint32_t> GetSolution(LightsOutGame &game);
+	boost::dynamic_bitset<uint32_t> GetInverseResolvent(LightsOutGame &game);
 
 	/*[deprecated]*/
 	//void SortStrokesByCoolness(LightsOutGame &game); //DO NOT CALL THIS METHOD
@@ -47,10 +47,10 @@ private:
 private:
 	bool mSolvingFlag; //True if you are allowed to take values from mTurns
 
-	boost::dynamic_bitset<UINT> mResolvent; //The solution in dynamic_bitset representation
+	boost::dynamic_bitset<uint32_t> mResolvent; //The solution in dynamic_bitset representation
 	std::vector<PointOnField> mTurns;		//The solution in PointOnField representation
 
-	boost::dynamic_bitset<UINT> mInverseResolvent; //The anti-solution in dynamic_bitset representation
+	boost::dynamic_bitset<uint32_t> mInverseResolvent; //The anti-solution in dynamic_bitset representation
 
 	LOMatrix mInvSolvingMatrix;  //
 	bool mSolvingInversed;		 //For solution caching 

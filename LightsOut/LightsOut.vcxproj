@@ -214,11 +214,11 @@
     <ClCompile Include="LightsOut.cpp" />
     <ClCompile Include="LightsOutGame.cpp" />
     <ClCompile Include="LightsOutSolver.cpp" />
+    <ClCompile Include="LORenderer.cpp" />
     <ClCompile Include="LOSaver.cpp" />
     <ClCompile Include="LOShaders.cpp" />
     <ClCompile Include="LOShaderVariables.cpp" />
     <ClCompile Include="LOTextures.cpp" />
-    <ClCompile Include="LOScreenQuad.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="RenderStates.cpp" />
   </ItemGroup>
@@ -227,16 +227,13 @@
     <ClInclude Include="LightsOut.hpp" />
     <ClInclude Include="LightsOutGame.hpp" />
     <ClInclude Include="LightsOutSolver.hpp" />
+    <ClInclude Include="LORenderer.h" />
     <ClInclude Include="LOSaver.hpp" />
     <ClInclude Include="LOShaders.hpp" />
     <ClInclude Include="LOShaderVariables.hpp" />
     <ClInclude Include="LOTextures.hpp" />
-    <ClInclude Include="LOScreenQuad.hpp" />
     <ClInclude Include="RenderStates.hpp" />
     <ClInclude Include="Util.hpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Shaders\Render\VertexFormats.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\Compute\ComputeField.hlsl">
@@ -245,13 +242,13 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='TrueRelease|Win32'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='TrueRelease|Win32'">4.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='TrueRelease|x64'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='TrueRelease|x64'">4.0</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='TrueRelease|x64'">5.0</ShaderModel>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Shaders\Compute\%(Filename).cso</ObjectFileOutput>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Shaders\Compute\%(Filename).cso</ObjectFileOutput>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='TrueRelease|x64'">$(OutDir)Shaders\Compute\%(Filename).cso</ObjectFileOutput>
@@ -299,13 +296,13 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='TrueRelease|Win32'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='TrueRelease|Win32'">4.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='TrueRelease|x64'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='TrueRelease|x64'">4.0</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='TrueRelease|x64'">5.0</ShaderModel>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Shaders\Compute\%(Filename).cso</ObjectFileOutput>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Shaders\Compute\%(Filename).cso</ObjectFileOutput>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='TrueRelease|x64'">$(OutDir)Shaders\Compute\%(Filename).cso</ObjectFileOutput>

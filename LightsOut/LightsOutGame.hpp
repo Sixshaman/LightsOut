@@ -27,19 +27,19 @@ enum RESET_MODE
 class LightsOutGame
 {
 public:
-	LightsOutGame(unsigned short size);
+	LightsOutGame();
 	~LightsOutGame();
 
 	void Click(unsigned short xPos, unsigned short yPos);
 	void ConstructClick(unsigned short xPos, unsigned short yPos);
 
-	void ResetField(unsigned short size, RESET_MODE mode = RESET_SOLVABLE_RANDOM, boost::dynamic_bitset<UINT> *resolvent = nullptr);
+	void ResetField(unsigned short size, RESET_MODE mode = RESET_SOLVABLE_RANDOM, boost::dynamic_bitset<uint32_t> *resolvent = nullptr);
 
-	boost::dynamic_bitset<UINT> getField() const { return mMainField; }
+	boost::dynamic_bitset<uint32_t> getField() const { return mMainField; }
 	unsigned short getSize() const { return mSize; }
 
 private:
-	boost::dynamic_bitset<UINT> mMainField;
+	boost::dynamic_bitset<uint32_t> mMainField;
 	unsigned short mSize;
 };
 

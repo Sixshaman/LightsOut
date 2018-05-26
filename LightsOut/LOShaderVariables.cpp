@@ -60,7 +60,7 @@ void ComputeFieldVariables::SetCSVariables(ID3D11DeviceContext *dc)
 
 	dc->CSSetConstantBuffers(0, 1, &mCSCbuffer);
 
-	ID3D11ShaderResourceView *SRVs[2] = {LOTextures::getFieldSRV(), LOTextures::getSolveSRV()};
+	ID3D11ShaderResourceView *SRVs[2] = {LOTextures::getFieldSRV(), LOTextures::getSolutionSRV()};
 	dc->CSSetShaderResources(0, 2, SRVs);
 
 	ID3D11UnorderedAccessView *UAVs[1] = {LOTextures::getResultUAV()};
@@ -79,24 +79,24 @@ void ComputeFieldVariables::DisableVariables(ID3D11DeviceContext *dc)
 	dc->CSSetUnorderedAccessViews(0, 1, nulluav, nullptr);
 }
 
-void ComputeFieldVariables::SetFieldSize(UINT fieldSize)
+void ComputeFieldVariables::SetFieldSize(uint32_t fieldSize)
 {
 	mCSCBufferCopy.FieldSize = fieldSize;
 }
 
-void ComputeFieldVariables::SetCellSize(UINT cellSize)
+void ComputeFieldVariables::SetCellSize(uint32_t cellSize)
 {
 	mCSCBufferCopy.CellSize = cellSize;
 }
 
-void ComputeFieldVariables::SetSolveVisible(bool solveVisible)
+void ComputeFieldVariables::SetSolutionVisible(bool solveVisible)
 {
 	mCSCBufferCopy.SolveVisible = solveVisible;
 }
 
 void ComputeFieldVariables::SetHintTurn(USHORT strokeX, USHORT strokeY)
 {
-	mCSCBufferCopy.CompressedTurn = ((UINT)strokeX << 16) | strokeY;
+	mCSCBufferCopy.CompressedTurn = ((uint32_t)strokeX << 16) | strokeY;
 }
 
 void ComputeFieldVariables::SetColorNone(XMVECTOR colorNone)

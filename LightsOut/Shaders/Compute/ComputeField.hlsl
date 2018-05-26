@@ -2,7 +2,7 @@ cbuffer cbParams: register(b0)
 {
 	uint gFieldSize;
 	uint gCellSize;
-	bool gSolveVisible;
+	bool gSolutionVisible;
 	uint gCompressedTurn; //Coordinates of hint
 
 	float4 gColorNone;
@@ -11,8 +11,8 @@ cbuffer cbParams: register(b0)
 	float4 gColorBetween;
 };
 
-Texture1D<uint> Field: register(t0); //Field in compressed UINT-format
-Texture1D<uint> Solve: register(t1); //Solution in compressed UINT-format
+Buffer<uint> Field:    register(t0); //Field in compressed uint32_t-format
+Buffer<uint> Solution: register(t1); //Solution in compressed uint32_t-format
 
 RWTexture2D<float4> Result: register(u0); //Drawn field
 
@@ -44,9 +44,9 @@ void main(uint3 DTid: SV_DispatchThreadID)
 		}
 
 		[flatten]
-		if(gSolveVisible) //We are showing the solution
+		if(gSolutionVisible) //Show the solution
 		{
-			bool cellSolved = (Solve[compressedCellGroupNumber] >> compressedCellNumber) & 1; //Getting the bit of cell
+			bool cellSolved = (Solution[compressedCellGroupNumber] >> compressedCellNumber) & 1; //Getting the bit of cell
 
 			[flatten]
 			if(cellSolved)

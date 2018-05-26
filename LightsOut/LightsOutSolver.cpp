@@ -3,7 +3,7 @@
 #include <random>
 #include "Util.hpp"
 
-Solver::Solver(): mSolvingFlag(false), mResolvent(boost::dynamic_bitset<UINT>()), mSolvingInversed(false), mCurrentSize(0)
+Solver::Solver(): mSolvingFlag(false), mResolvent(boost::dynamic_bitset<uint32_t>()), mSolvingInversed(false), mCurrentSize(0)
 {
 }
 
@@ -38,7 +38,7 @@ LOMatrix Solver::getSolvingMatrix(unsigned short size)
 
 	for(int i = 0; i < si_si; i++)
 	{
-		lightMatrix.push_back(boost::dynamic_bitset<UINT>(si_si));
+		lightMatrix.push_back(boost::dynamic_bitset<uint32_t>(si_si));
 		lightMatrix[i].reset();
 	}
 
@@ -69,7 +69,7 @@ void Solver::getInverseMatrix(unsigned short size)
 
 	for(int i = 0; i < size_size; i++)
 	{
-		mInvSolvingMatrix.push_back(boost::dynamic_bitset<UINT>(size_size));
+		mInvSolvingMatrix.push_back(boost::dynamic_bitset<uint32_t>(size_size));
 		mInvSolvingMatrix[i].set(i);
 	}
 
@@ -142,7 +142,7 @@ void Solver::SolveGame(LightsOutGame &game)
 	}
 
 	int si_si = game.getSize() * game.getSize();
-	boost::dynamic_bitset<UINT> field = game.getField();
+	boost::dynamic_bitset<uint32_t> field = game.getField();
 	mResolvent.resize(si_si, false);
 
 	//Calculate solution by multiplying inverse matrix on field vector
@@ -312,7 +312,7 @@ PointOnField Solver::GetHint(LightsOutGame &game)
 * Get the whole solution.
 *
 */
-boost::dynamic_bitset<UINT> Solver::GetResolvent(LightsOutGame &game)
+boost::dynamic_bitset<uint32_t> Solver::GetSolution(LightsOutGame &game)
 {
 	SolveGame(game);
 
@@ -321,12 +321,12 @@ boost::dynamic_bitset<UINT> Solver::GetResolvent(LightsOutGame &game)
 	return mResolvent;
 }
 
-boost::dynamic_bitset<UINT> Solver::GetInverseResolvent(LightsOutGame &game)
+boost::dynamic_bitset<uint32_t> Solver::GetInverseResolvent(LightsOutGame &game)
 {
 	mInverseResolvent.clear();
 
 	int si_si = game.getSize() * game.getSize();
-	boost::dynamic_bitset<UINT> field = game.getField();
+	boost::dynamic_bitset<uint32_t> field = game.getField();
 	mInverseResolvent.resize(si_si, false);
 
 	if(game.getField().empty())
@@ -340,8 +340,8 @@ boost::dynamic_bitset<UINT> Solver::GetInverseResolvent(LightsOutGame &game)
 		{
 			mInverseResolvent[i] ^= 1;
 
-			UINT32 fieldX = i % game.getSize();
-			UINT32 fieldY = i / game.getSize();
+			uint32_t fieldX = i % game.getSize();
+			uint32_t fieldY = i / game.getSize();
 
 			int left   = fieldX >                  0 ? fieldX - 1 : -1;
 			int right  = fieldX < game.getSize() - 1 ? fieldX + 1 : -1;

@@ -40,3 +40,12 @@
 /LightsOut/x64/Release/LightsOut.log
 /LightsOut/x64/Release/FileDialog.obj
 /.vs/LightsOut/v14/.suo
+/Debug
+/LightsOut/Debug
+/LightsOut/Release
+/LightsOut/x64
+/TrueRelease
+/Release
+/x64/Debug
+/LightsOut.sdf
+/LightsOut.VC.db

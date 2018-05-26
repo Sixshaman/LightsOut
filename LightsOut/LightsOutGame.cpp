@@ -2,19 +2,18 @@
 #include "Util.hpp"
 #include <random>
 
-LightsOutGame::LightsOutGame(unsigned short size): mSize(size)
+LightsOutGame::LightsOutGame(): mSize(5)
 {
-	ResetField(mSize);
 }
 
 LightsOutGame::~LightsOutGame()
 {
 }
 
-void LightsOutGame::ResetField(unsigned short size, RESET_MODE mode, boost::dynamic_bitset<UINT> *resolvent)
+void LightsOutGame::ResetField(unsigned short size, RESET_MODE mode, boost::dynamic_bitset<uint32_t> *resolvent)
 {
 	mSize = size;
-	UINT si_si = size*size;
+	uint32_t si_si = size*size;
 
 	mMainField.clear();
 	mMainField.resize(si_si);
@@ -93,9 +92,9 @@ void LightsOutGame::Click(unsigned short posX, unsigned short posY)
 	Clamp(posY, (unsigned short)0, (unsigned short)(mSize - 1));
 
 	mMainField[posY*mSize + posX].flip();
-	if(posX > 0) mMainField[posY*mSize + posX - 1].flip();
+	if(posX > 0)         mMainField[posY*mSize + posX - 1].flip();
 	if(posX < mSize - 1) mMainField[posY*mSize + posX + 1].flip();
-	if(posY > 0) mMainField[(posY-1)*mSize + posX].flip();
+	if(posY > 0)         mMainField[(posY-1)*mSize + posX].flip();
 	if(posY < mSize - 1) mMainField[(posY+1)*mSize + posX].flip();
 }
 

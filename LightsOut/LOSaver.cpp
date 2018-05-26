@@ -18,23 +18,20 @@ void LightsOutSaver::SaveState(ID3D11DeviceContext* dc, HWND wndForDlg)
 	resultTex->GetDesc(&tDesc);
 
 	D3D11_MAPPED_SUBRESOURCE mappedRes;
-	
 	dc->Map(resultTex, 0, D3D11_MAP_READ, 0, &mappedRes);
-	UINT* data = reinterpret_cast<UINT*>(mappedRes.pData);
-
+	uint32_t* data = reinterpret_cast<uint32_t*>(mappedRes.pData);
 	SaveBMP(filePath, data, tDesc.Width, tDesc.Height, mappedRes.RowPitch);
-
 	dc->Unmap(resultTex, 0);
 }
  
-void LightsOutSaver::SaveBMP(std::wstring& filename, UINT* data, UINT width, UINT height, UINT rowPitch)
+void LightsOutSaver::SaveBMP(std::wstring& filename, uint32_t* data, uint32_t width, uint32_t height, uint32_t rowPitch)
 {
 	HANDLE hFile;
 
 	BITMAPFILEHEADER bmpFileHeader;
 	bmpFileHeader.bfType = 0x4D42;
 	bmpFileHeader.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + 1024; 
-	bmpFileHeader.bfSize = bmpFileHeader.bfOffBits + sizeof(UINT) * width * height + height * (sizeof (UINT)* width) % 4;
+	bmpFileHeader.bfSize = bmpFileHeader.bfOffBits + sizeof(uint32_t) * width * height + height * (sizeof (uint32_t)* width) % 4;
 	bmpFileHeader.bfReserved1 = 0;
 	bmpFileHeader.bfReserved2 = 0;
 
@@ -70,17 +67,17 @@ void LightsOutSaver::SaveBMP(std::wstring& filename, UINT* data, UINT width, UIN
 		for(unsigned int j = 0; j < width; j++)
 		{
 			//ABGR to ARGB
-			UINT color = data[i*rowPitch / sizeof(UINT) + j];
+			uint32_t color = data[i*rowPitch / sizeof(uint32_t) + j];
 			BYTE A = (color >> 24) & 0xff; 
 			BYTE B = (color >> 16) & 0xff;
 			BYTE G = (color >>  8) & 0xff;
 			BYTE R = (color >>  0) & 0xff;
 
 			color = (A << 24) | (R << 16) | (G << 8) | (B << 0);
-			WriteFile(hFile, &color, sizeof(UINT), &writtenBytes, nullptr);
+			WriteFile(hFile, &color, sizeof(uint32_t), &writtenBytes, nullptr);
 		}
 
-		WriteFile(hFile, Palette, (sizeof (UINT)* width) % 4, &writtenBytes, nullptr);
+		WriteFile(hFile, Palette, (sizeof (uint32_t)* width) % 4, &writtenBytes, nullptr);
 	}
 
 	CloseHandle(hFile);

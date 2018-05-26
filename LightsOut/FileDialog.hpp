@@ -16,10 +16,10 @@ public:
 	static bool GetPictureToSave(HWND wnd, std::wstring& filename);
 
 private:
-	static bool FileSave(HWND wnd, std::wstring& filename, LPWSTR dialogTitle, const  COMDLG_FILTERSPEC *fileTypes, UINT fileTypesSize);
+	static bool FileSave(HWND wnd, std::wstring& filename, LPWSTR dialogTitle, const  COMDLG_FILTERSPEC *fileTypes, uint32_t fileTypesSize);
 
 	static bool FileDialogHandle(HWND wnd, std::wstring& filename, LPWSTR dialogTitle, const COMDLG_FILTERSPEC *fileTypes,
-								 UINT fileTypesSize, const CLSID dialogType);
+								 uint32_t fileTypesSize, const CLSID dialogType);
 };
 
 #endif FILEDIALOG_HPP

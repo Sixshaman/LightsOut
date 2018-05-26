@@ -12,10 +12,10 @@ using DirectX::XMVECTOR;
 
 struct CS_CBUFFER
 {
-	UINT FieldSize;
-	UINT CellSize;
+	uint32_t FieldSize;
+	uint32_t CellSize;
 	bool SolveVisible;
-	UINT CompressedTurn; //First 16 bit is the x-coord of hint. Second 16 bit is the y-coord of hint.
+	uint32_t CompressedTurn; //First 16 bit is the x-coord of hint. Second 16 bit is the y-coord of hint.
 
 	XMFLOAT4 ColorNone;
 	XMFLOAT4 ColorEnabled;
@@ -36,9 +36,9 @@ public:
 	static void SetCSVariables(ID3D11DeviceContext *dc);
 	static void DisableVariables(ID3D11DeviceContext* dc);
 
-	static void SetFieldSize(UINT fieldSize);
-	static void SetCellSize(UINT cellSize);
-	static void SetSolveVisible(bool solveVisible);
+	static void SetFieldSize(uint32_t fieldSize);
+	static void SetCellSize(uint32_t cellSize);
+	static void SetSolutionVisible(bool solveVisible);
 	static void SetHintTurn(USHORT strokeX, USHORT strokeY);
 
 	static void SetColorNone(XMVECTOR colorNone);

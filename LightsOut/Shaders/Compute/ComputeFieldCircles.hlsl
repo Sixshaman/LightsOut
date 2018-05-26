@@ -2,7 +2,7 @@ cbuffer cbParams: register(b0)
 {
 	uint gFieldSize;
 	uint gCellSize;
-	bool gSolveVisible;
+	bool gSolutionVisible;
 	uint gCompressedTurn; //Coordinates of hint
 
 	float4 gColorNone;
@@ -11,8 +11,8 @@ cbuffer cbParams: register(b0)
 	float4 gColorBetween;
 };
 
-Texture1D<uint> Field: register(t0); //Field in compressed UINT-format
-Texture1D<uint> Solve: register(t1); //Solution in compressed UINT-format
+Buffer<uint> Field:    register(t0); //Field in compressed uint32_t-format
+Buffer<uint> Solution: register(t1); //Solution in compressed uint32_t-format
 
 RWTexture2D<float4> Result: register(u0); //Drawn field
 
@@ -26,14 +26,14 @@ bool IsCellActivated(uint2 cellNumber)
 	return (Field[compressedCellGroupNumber] >> compressedCellNumber) & 1; //Getting the bit of cell
 }
 
-bool IsCellActivatedSolve(uint2 cellNumber)
+bool IsCellActivatedSolution(uint2 cellNumber)
 {
 	uint cellNumberAll = cellNumber.y * gFieldSize + cellNumber.x; //Number of cell
 
 	uint compressedCellGroupNumber = cellNumberAll / 32; //Element of Field that contains that cell
 	uint compressedCellNumber = cellNumberAll % 32; //Number of bit of that cell
 
-	return (Solve[compressedCellGroupNumber] >> compressedCellNumber) & 1; //Getting the bit of cell
+	return (Solution[compressedCellGroupNumber] >> compressedCellNumber) & 1; //Getting the bit of cell
 }
 
 [numthreads(16, 16, 1)]
@@ -74,14 +74,14 @@ void main(uint3 DTid: SV_DispatchThreadID)
 		uint hintTurnY = gCompressedTurn & 0xffff;
 
 		[flatten]
-		if(gSolveVisible || cellNumber.x == hintTurnX && cellNumber.x == hintTurnY) //We are showing the solution
+		if(gSolutionVisible || cellNumber.x == hintTurnX && cellNumber.x == hintTurnY) //We are showing the solution
 		{
-			bool cellSolved = IsCellActivatedSolve(cellNumber);
+			bool cellSolved = IsCellActivatedSolution(cellNumber);
 
-			bool leftPartSolved   = cellNumber.x > 0              && IsCellActivatedSolve(cellNumber + int2(-1,  0));
-			bool rightPartSolved  = cellNumber.x < gFieldSize - 1 && IsCellActivatedSolve(cellNumber + int2( 1,  0));
-			bool topPartSolved    = cellNumber.y > 0              && IsCellActivatedSolve(cellNumber + int2( 0, -1));
-			bool bottomPartSolved = cellNumber.y < gFieldSize - 1 && IsCellActivatedSolve(cellNumber + int2( 0,  1));
+			bool leftPartSolved   = cellNumber.x > 0              && IsCellActivatedSolution(cellNumber + int2(-1,  0));
+			bool rightPartSolved  = cellNumber.x < gFieldSize - 1 && IsCellActivatedSolution(cellNumber + int2( 1,  0));
+			bool topPartSolved    = cellNumber.y > 0              && IsCellActivatedSolution(cellNumber + int2( 0, -1));
+			bool bottomPartSolved = cellNumber.y < gFieldSize - 1 && IsCellActivatedSolution(cellNumber + int2( 0,  1));
 
 			bool circleEdgeSolved = (leftPartSolved && cellCoord.x <= 0) || (topPartSolved && cellCoord.y <= 0) || (rightPartSolved && cellCoord.x >= 0) || (bottomPartSolved && cellCoord.y >= 0);
 

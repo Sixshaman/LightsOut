@@ -5,19 +5,7 @@
 #include <Windows.h>
 #include "LightsOutGame.hpp"
 #include "LightsOutSolver.hpp"
-
-#include "LOShaders.hpp"
-#include "LOTextures.hpp"
-#include "LOScreenQuad.hpp"
-#include "LOShaderVariables.hpp"
-
-enum class DrawType
-{
-	DRAW_SQUARES   = 0,
-	DRAW_CIRCLES   = 1,
-	DRAW_RAINDROPS = 2,
-	DRAW_CHAINS    = 3
-};
+#include "LORenderer.h"
 
 /*
 * The main class for Lights Out game.
@@ -31,23 +19,18 @@ public:
 	~LightsOutApp();
 
 	bool InitAll();
-	void Reset(UINT size);
 
 	int RunApp();
 
-	LRESULT CALLBACK AppProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+	LRESULT CALLBACK AppProc(HWND hWnd, uint32_t message, WPARAM wParam, LPARAM lParam);
 
 private:
-	void OnMouseClick(WPARAM btnState, UINT xPos, UINT yPos);
+	void OnMouseClick(WPARAM btnState, uint32_t xPos, uint32_t yPos);
 
 	bool InitWnd();
 	bool InitMenu();
-	bool InitD3D();
 
 	void Update();
-	void DrawField();
-
-	bool OnWndResize();
 
 	void OnMenuItem(WPARAM State);
 	void ResetField(WPARAM key);
@@ -59,35 +42,24 @@ private:
 	HWND	  mMainWnd;
 	HMENU     mMainMenu;
 
-	ID3D11Device*		 md3dDevice;
-	ID3D11DeviceContext* md3dContext;
-	IDXGISwapChain*		 mSwapChain;
-
-	ID3D11RenderTargetView* mRenderTarget;
-	ID3D11DepthStencilView* mDepthStencilView;
-	D3D11_VIEWPORT			mViewport;
-
-	LOScreenQuad *mScreenQuad; //To draw the field with Direct3D
+	LightsOutRenderer mRenderer;
 
 	LightsOutGame mGame;
 	Solver mSolver;
 
-	UINT mCellSize;	//Calculated from game size
+	uint32_t mCellSize;	//Calculated from game size
 
-	PointOnField			    *mHintTurn;		  //Just a hint
-	boost::dynamic_bitset<UINT>  mTurnsResolvent; //Whole solution
+	boost::dynamic_bitset<uint32_t> mSolution; //Solution cells
 
-	UINT mPeriodCount;
-	boost::dynamic_bitset<UINT> mCountedField;
+	uint32_t mPeriodCount;
+	boost::dynamic_bitset<uint32_t> mCountedField;
 
 	PointOnField mCurrentTurn;
 
 	int mWndWidth;
 	int mWndHeight;
 
-	DrawType mDrawType;
-
-	UINT8 mFlags; //Some flags for showing the field
+	uint32_t mFlags; //Some flags for showing the field
 };
 
 #endif LIGHTS_OUT_HPP

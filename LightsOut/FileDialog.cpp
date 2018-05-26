@@ -18,7 +18,7 @@ bool FileDialog::GetPictureToSave(HWND wnd, std::wstring& filename)
 	return true;
 }
 
-bool FileDialog::FileSave(HWND wnd, std::wstring& filename, LPWSTR dialogTitle, const COMDLG_FILTERSPEC *fileTypes, UINT fileTypesSize)
+bool FileDialog::FileSave(HWND wnd, std::wstring& filename, LPWSTR dialogTitle, const COMDLG_FILTERSPEC *fileTypes, uint32_t fileTypesSize)
 {
 	if(!FileDialogHandle(wnd, filename, dialogTitle, fileTypes, fileTypesSize, CLSID_FileSaveDialog))
 	{
@@ -29,7 +29,7 @@ bool FileDialog::FileSave(HWND wnd, std::wstring& filename, LPWSTR dialogTitle, 
 }
 
 bool FileDialog::FileDialogHandle(HWND wnd, std::wstring& filename, LPWSTR dialogTitle, const COMDLG_FILTERSPEC *fileTypes,
-								  UINT fileTypesSize, const CLSID dialogType)
+								  uint32_t fileTypesSize, const CLSID dialogType)
 {
 	IFileDialog *pFileDialog = nullptr;																	
 	if(FAILED(CoCreateInstance(dialogType, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pFileDialog)))) 

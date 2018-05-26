@@ -1,10 +1,14 @@
-#include "VertexFormats.hlsli"
-
-Texture2D DrawedField: register(t0);
+Texture2D DrawnField: register(t0);
 
 SamplerState SamConst: register(s0);
 
-float4 main(VertexOut vout): SV_TARGET
+struct PixelIn
 {
-	return DrawedField.Sample(SamConst, vout.Tex);
+	float4 PosH: SV_POSITION;
+	float2 Tex:  TEXCOORD;
+};
+
+float4 main(PixelIn pin): SV_TARGET
+{
+	return DrawnField.Sample(SamConst, pin.Tex);
 }
