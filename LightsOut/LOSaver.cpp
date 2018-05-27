@@ -1,29 +1,6 @@
 #include "LOSaver.hpp"
 #include "LOTextures.hpp"
-#include "FileDialog.hpp"
 
-void LightsOutSaver::SaveState(ID3D11DeviceContext* dc, HWND wndForDlg)
-{
-	std::wstring filePath;
-	FileDialog::GetPictureToSave(wndForDlg, filePath);
-
-	ID3D11Texture2D* resultTex = LOTextures::getMappedTex(dc);
-
-	if(!resultTex)
-	{
-		return;
-	}
-
-	D3D11_TEXTURE2D_DESC tDesc;
-	resultTex->GetDesc(&tDesc);
-
-	D3D11_MAPPED_SUBRESOURCE mappedRes;
-	dc->Map(resultTex, 0, D3D11_MAP_READ, 0, &mappedRes);
-	uint32_t* data = reinterpret_cast<uint32_t*>(mappedRes.pData);
-	SaveBMP(filePath, data, tDesc.Width, tDesc.Height, mappedRes.RowPitch);
-	dc->Unmap(resultTex, 0);
-}
- 
 void LightsOutSaver::SaveBMP(std::wstring& filename, uint32_t* data, uint32_t width, uint32_t height, uint32_t rowPitch)
 {
 	HANDLE hFile;

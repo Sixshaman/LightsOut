@@ -77,10 +77,8 @@ void LOTextures::DestroyAll()
 	SafeRelease(mResultCopy);
 }
 
-bool LOTextures::ResizeField(uint32_t newFieldSize, ID3D11Device* device)
+bool LOTextures::ResizeField(uint32_t newFieldSize, uint16_t cellSize, ID3D11Device* device)
 {
-	uint32_t cellSize = (uint32_t)(ceilf(EXPECTED_WND_SIZE / newFieldSize) - 1);
-
 	SafeRelease(mResultSRV);
 	SafeRelease(mResultUAV);
 	SafeRelease(mResultCopy);

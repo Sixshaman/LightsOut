@@ -17,7 +17,7 @@ public:
 	static void UpdateField(boost::dynamic_bitset<uint32_t> field, ID3D11DeviceContext* dc);
 	static void UpdateSolution(boost::dynamic_bitset<uint32_t> solve, ID3D11DeviceContext* dc);
 
-	static bool ResizeField(uint32_t newFieldSize, ID3D11Device* device);
+	static bool ResizeField(uint32_t newFieldSize, uint16_t cellSize, ID3D11Device* device);
 
 	static ID3D11Texture2D* getMappedTex(ID3D11DeviceContext* dc);
 

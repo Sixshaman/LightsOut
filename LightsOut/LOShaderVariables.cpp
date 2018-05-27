@@ -134,6 +134,16 @@ void ComputeFieldVariables::SetColorBetweenAsSolved()
 	mCSCBufferCopy.ColorBetween = mCSCBufferCopy.ColorSolved;
 }
 
+void ComputeFieldVariables::SetColorBetweenAsDimmed()
+{
+	XMVECTOR unlitColor    = DirectX::XMLoadFloat4(&mCSCBufferCopy.ColorNone);
+	XMVECTOR invUnlitColor = DirectX::XMVectorSubtract(DirectX::XMVectorSplatOne(), unlitColor);
+
+	XMVECTOR halfLit = DirectX::XMVectorScale(DirectX::XMVectorAbs(DirectX::XMVectorSubtract(invUnlitColor, unlitColor)), 0.5f);
+
+	DirectX::XMStoreFloat4(&mCSCBufferCopy.ColorBetween, halfLit);
+}
+
 #pragma endregion ComputeField
 
 #pragma region DrawScreen

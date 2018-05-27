@@ -49,6 +49,7 @@ public:
 	static void SetColorBetweenAsNone();
 	static void SetColorBetweenAsEnabled();
 	static void SetColorBetweenAsSolved();
+	static void SetColorBetweenAsDimmed();
 
 	static void UpdateCSCBuffer(ID3D11DeviceContext *dc);
 

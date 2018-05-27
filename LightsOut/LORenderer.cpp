@@ -4,6 +4,7 @@
 #include "LOShaders.hpp"
 #include "LOTextures.hpp"
 #include "LOShaderVariables.hpp"
+#include "Util.hpp"
 
 LightsOutRenderer::LightsOutRenderer()
 {
@@ -101,23 +102,19 @@ bool LightsOutRenderer::InitD3D(HWND hwnd)
 		return false;
 	}
 
-	ComputeFieldVariables::SetColorSolved(DirectX::Colors::Blue);
-	ComputeFieldVariables::SetColorEnabled(DirectX::Colors::Lime);
-	ComputeFieldVariables::SetColorNone(DirectX::Colors::Black);
-	ComputeFieldVariables::SetColorBetween(DirectX::Colors::DarkGray);
+	SetColorTheme(ColorTheme::NEON_XXL);
+	EdgeColorAsUnlit();
 
 	return true;
 }
 
 void LightsOutRenderer::ResetFieldSize(uint16_t newSize)
 {
-	ComputeFieldVariables::SetFieldSize(newSize);
-	LOTextures::ResizeField(newSize, md3dDevice.Get());
-}
-
-void LightsOutRenderer::SetCellSize(uint16_t cellSize)
-{
+	uint32_t cellSize = (uint32_t)(ceilf(EXPECTED_WND_SIZE / newSize) - 1);
 	ComputeFieldVariables::SetCellSize(cellSize);
+
+	ComputeFieldVariables::SetFieldSize(newSize);
+	LOTextures::ResizeField(newSize, cellSize, md3dDevice.Get());
 }
 
 void LightsOutRenderer::SetSolutionVisible(bool visible)
@@ -254,7 +251,12 @@ void LightsOutRenderer::EdgeColorAsSolution()
 	ComputeFieldVariables::SetColorBetweenAsSolved();
 }
 
-void LightsOutRenderer::RedrawFieldToTexture(uint16_t cellSize, uint16_t gameSize)
+void LightsOutRenderer::EdgeColorDimmed()
+{
+	ComputeFieldVariables::SetColorBetweenAsDimmed();
+}
+
+void LightsOutRenderer::DrawFieldOnTexture(uint16_t cellSize, uint16_t gameSize)
 {
 	FLOAT clearColor[4] = {0.0f, 0.0f, 0.0f, 1.0f};
 
@@ -321,8 +323,32 @@ void LightsOutRenderer::DrawFieldTexOnScreen()
 
 void LightsOutRenderer::DrawField(uint16_t cellSize, uint16_t gameSize)
 {
-	RedrawFieldToTexture(cellSize, gameSize);
+	DrawFieldOnTexture(cellSize, gameSize);
 	DrawFieldTexOnScreen();
 
 	mSwapChain->Present(0, 0);
+}
+
+void LightsOutRenderer::DrawBgFieldToMemory(uint16_t cellSize, uint16_t gameSize, std::vector<uint32_t>& outData, uint32_t& outRowPitch)
+{
+	outData.clear();
+
+	ComputeFieldVariables::SetCellSize(cellSize);
+
+	LOTextures::ResizeField(gameSize, cellSize, md3dDevice.Get());
+	DrawFieldOnTexture(cellSize, gameSize);
+
+	ID3D11Texture2D* resultTex = LOTextures::getMappedTex(md3dContext.Get());
+
+	D3D11_TEXTURE2D_DESC tDesc;
+	resultTex->GetDesc(&tDesc);
+
+	D3D11_MAPPED_SUBRESOURCE mappedRes;
+	md3dContext->Map(resultTex, 0, D3D11_MAP_READ, 0, &mappedRes);
+	uint32_t* data = reinterpret_cast<uint32_t*>(mappedRes.pData);
+	outData.resize(mappedRes.RowPitch * tDesc.Height / sizeof(uint32_t));
+	std::copy(&data[0], &data[outData.size()], outData.begin());
+	md3dContext->Unmap(resultTex, 0);
+
+	outRowPitch = mappedRes.RowPitch;
 }

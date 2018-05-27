@@ -2,6 +2,7 @@
 #include "Util.hpp"
 #include <WindowsX.h>
 #include "LOSaver.hpp"
+#include "FileDialog.hpp"
 
 #define IS_RANDOM_SOLVING  0x01 //Call LightsOutSolver::GetRandomTurn() instead of LightsOutSolver::GetFirstTurn()
 #define SHOW_SOLUTION      0x02 //Show the whole solution with special color
@@ -19,6 +20,7 @@
 #define MENU_THEME_EDGES_LIKE_OFF     1201
 #define MENU_THEME_EDGES_LIKE_ON      1202
 #define MENU_THEME_EDGES_LIKE_SOLVED  1203
+#define MENU_THEME_EDGES_DIMMED       1204
 
 #define MENU_VIEW_SQUARES			  2001
 #define MENU_VIEW_CIRCLES			  2002
@@ -143,12 +145,13 @@ bool LightsOutApp::InitMenu()
 	AppendMenu(MenuTheme, MF_STRING, MENU_THEME_EDGES_LIKE_OFF,	   L"Edges like unlit");
 	AppendMenu(MenuTheme, MF_STRING, MENU_THEME_EDGES_LIKE_ON,	   L"Edges like lit");
 	AppendMenu(MenuTheme, MF_STRING, MENU_THEME_EDGES_LIKE_SOLVED, L"Edges like solution");
+	AppendMenu(MenuTheme, MF_STRING, MENU_THEME_EDGES_DIMMED,      L"Dimmed edges");
 
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_SQUARES,   L"Squares");
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_CIRCLES,   L"Circles");
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_RAINDROPS, L"Raindrops");
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_CHAINS,    L"Chains");
-	AppendMenu(MenuTheme, MF_MENUBREAK, 0, nullptr);
+	AppendMenu(MenuView, MF_MENUBREAK, 0, nullptr);
 
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_NO_EDGES, L"Disable edges");
 
@@ -231,6 +234,11 @@ void LightsOutApp::OnMenuItem(WPARAM State)
 		mRenderer.EdgeColorAsSolution();
 		break;
 	}
+	case MENU_THEME_EDGES_DIMMED:
+	{
+		mRenderer.EdgeColorDimmed();
+		break;
+	}
 	case MENU_VIEW_SQUARES:
 	{
 		mRenderer.SetDrawType(DrawType::DRAW_SQUARES);
@@ -257,17 +265,17 @@ void LightsOutApp::OnMenuItem(WPARAM State)
 	}
 	case MENU_FILE_SAVE_STATE:
 	{
-		//LightsOutSaver::SaveState(md3dContext, mMainWnd);
+		SaveField(EXPECTED_WND_SIZE);
 		break;
 	}
 	case MENU_FILE_SAVE_STATE_4X:
 	{
-		//LightsOutSaver::SaveState(md3dContext, mMainWnd);
+		SaveField(EXPECTED_WND_SIZE * 2);
 		break;
 	}
 	case MENU_FILE_SAVE_STATE_16X:
 	{
-		//LightsOutSaver::SaveState(md3dContext, mMainWnd);
+		SaveField(EXPECTED_WND_SIZE * 4);
 		break;
 	}
 	}
@@ -349,6 +357,24 @@ void LightsOutApp::Update()
 	}
 }
 
+void LightsOutApp::SaveField(uint32_t expectedSize)
+{
+	uint32_t cellSize = (uint32_t)(ceilf(expectedSize / mGame.getSize()) - 1);
+
+	std::vector<uint32_t> fieldData;
+	uint32_t fieldTexRowPitch;
+	mRenderer.DrawBgFieldToMemory(cellSize, mGame.getSize(), fieldData, fieldTexRowPitch);
+
+	std::wstring filePath;
+	FileDialog::GetPictureToSave(mMainWnd, filePath);
+
+	uint32_t texSize = mGame.getSize() * cellSize + 1;
+
+	LightsOutSaver::SaveBMP(filePath, &fieldData[0], texSize, texSize, fieldTexRowPitch);
+
+	mRenderer.ResetFieldSize(mGame.getSize());
+}
+
 void LightsOutApp::OnMouseClick(WPARAM btnState, uint32_t xPos, uint32_t yPos)
 {
 	uint32_t wndSize = mGame.getSize() * mCellSize + 1;
@@ -410,8 +436,6 @@ void LightsOutApp::ChangeGameSize(unsigned short newSize)
 
 	mCellSize = (uint32_t)(ceilf(EXPECTED_WND_SIZE / newSize) - 1);
 	uint32_t newWndSize = newSize * mCellSize + 1;
-
-	mRenderer.SetCellSize(mCellSize);
 
 	RECT WndRect;
 	GetWindowRect(mMainWnd, &WndRect);

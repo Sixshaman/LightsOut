@@ -38,10 +38,11 @@ public:
 	bool InitD3D(HWND hwnd);
 
 	void ResetFieldSize(uint16_t newSize);
-	void SetCellSize(uint16_t cellSize);
 	void SetSolutionVisible(bool visible);
 
 	void DrawField(uint16_t cellSize, uint16_t gameSize);
+	void DrawBgFieldToMemory(uint16_t cellSize, uint16_t gameSize, std::vector<uint32_t>& outData, uint32_t& outRowPitch);
+	
 	bool OnWndResize(uint16_t newWidth, uint16_t newHeight);
 
 	void SetDrawType(DrawType drawType);
@@ -53,9 +54,10 @@ public:
 	void EdgeColorAsUnlit();
 	void EdgeColorAsLit();
 	void EdgeColorAsSolution();
+	void EdgeColorDimmed();
 
 private:
-	void RedrawFieldToTexture(uint16_t cellSize, uint16_t gameSize);
+	void DrawFieldOnTexture(uint16_t cellSize, uint16_t gameSize);
 	void DrawFieldTexOnScreen();
 
 private:

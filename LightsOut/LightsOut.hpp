@@ -32,6 +32,8 @@ private:
 
 	void Update();
 
+	void SaveField(uint32_t expectedSize);
+
 	void OnMenuItem(WPARAM State);
 	void ResetField(WPARAM key);
 
