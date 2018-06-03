@@ -39,6 +39,7 @@ public:
 
 	void ResetFieldSize(uint16_t newSize);
 	void SetSolutionVisible(bool visible);
+	void SetStabilityVisible(bool visible);
 
 	void DrawField(uint16_t cellSize, uint16_t gameSize);
 	void DrawBgFieldToMemory(uint16_t cellSize, uint16_t gameSize, std::vector<uint32_t>& outData, uint32_t& outRowPitch);
@@ -49,6 +50,7 @@ public:
 
 	void SetFieldBufferData(boost::dynamic_bitset<uint32_t>);
 	void SetSolutionBufferData(boost::dynamic_bitset<uint32_t>);
+	void SetStabilityBufferData(boost::dynamic_bitset<uint32_t>);
 
 	void SetColorTheme(ColorTheme colorTheme);
 	void EdgeColorAsUnlit();

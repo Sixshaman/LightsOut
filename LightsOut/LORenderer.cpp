@@ -122,6 +122,11 @@ void LightsOutRenderer::SetSolutionVisible(bool visible)
 	ComputeFieldVariables::SetSolutionVisible(visible);
 }
 
+void LightsOutRenderer::SetStabilityVisible(bool visible)
+{
+	ComputeFieldVariables::SetStabilityVisible(visible);
+}
+
 bool LightsOutRenderer::OnWndResize(uint16_t newWidth, uint16_t newHeight)
 {
 	mRenderTarget.Reset();
@@ -197,6 +202,11 @@ void LightsOutRenderer::SetSolutionBufferData(boost::dynamic_bitset<uint32_t> so
 	LOTextures::UpdateSolution(solution, md3dContext.Get());
 }
 
+void LightsOutRenderer::SetStabilityBufferData(boost::dynamic_bitset<uint32_t> stability)
+{
+	LOTextures::UpdateStability(stability, md3dContext.Get());
+}
+
 void LightsOutRenderer::SetColorTheme(ColorTheme colorTheme)
 {
 	switch (colorTheme)
@@ -260,13 +270,11 @@ void LightsOutRenderer::DrawFieldOnTexture(uint16_t cellSize, uint16_t gameSize)
 {
 	FLOAT clearColor[4] = {0.0f, 0.0f, 0.0f, 1.0f};
 
-	md3dContext->ClearUnorderedAccessViewFloat(LOTextures::getResultUAV(), clearColor);
+	md3dContext->ClearUnorderedAccessViewFloat(LOTextures::ResultUAV(), clearColor);
 
 	//--------------------------------------------------------------------------------------------------------------------------
 	//----------------------------------------------Draw the field on the off-screen texture------------------------------------
 	//--------------------------------------------------------------------------------------------------------------------------
-
-	ComputeFieldVariables::SetHintTurn((USHORT)(-1), (USHORT)(-1)); //Hints are deprecated
 
 	ComputeFieldVariables::UpdateCSCBuffer(md3dContext.Get());
 	ComputeFieldVariables::SetCSVariables(md3dContext.Get());
@@ -338,7 +346,7 @@ void LightsOutRenderer::DrawBgFieldToMemory(uint16_t cellSize, uint16_t gameSize
 	LOTextures::ResizeField(gameSize, cellSize, md3dDevice.Get());
 	DrawFieldOnTexture(cellSize, gameSize);
 
-	ID3D11Texture2D* resultTex = LOTextures::getMappedTex(md3dContext.Get());
+	ID3D11Texture2D* resultTex = LOTextures::MappedTex(md3dContext.Get());
 
 	D3D11_TEXTURE2D_DESC tDesc;
 	resultTex->GetDesc(&tDesc);

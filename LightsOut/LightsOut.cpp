@@ -4,11 +4,13 @@
 #include "LOSaver.hpp"
 #include "FileDialog.hpp"
 
-#define IS_RANDOM_SOLVING  0x01 //Call LightsOutSolver::GetRandomTurn() instead of LightsOutSolver::GetFirstTurn()
-#define SHOW_SOLUTION      0x02 //Show the whole solution with special color
-#define IS_PERIOD_COUNTING 0x04 //Replace the field with the solution each tick
-#define IS_EIGVEC_COUNTING 0x08 //Replace the field with the special buffer each tick. After enough ticks you get the eigenvector of the field
-#define IS_PERIO4_COUNTING 0x10 //Replace the field with the solution of the solution of the solution of the solution each tick
+#define IS_RANDOM_SOLVING       0x01 //Call LightsOutSolver::GetRandomTurn() instead of LightsOutSolver::GetFirstTurn()
+#define SHOW_SOLUTION           0x02 //Show the whole solution with special color
+#define SHOW_STABILITY          0x04 //Show the cell stability data
+#define IS_PERIOD_COUNTING      0x08 //Replace the field with the solution each tick
+#define IS_EIGVEC_COUNTING      0x10 //Replace the field with the special buffer each tick. After enough ticks you get the eigenvector of the field
+#define IS_PERIO4_COUNTING      0x20 //Replace the field with the solution of the solution of the solution of the solution each tick
+#define IS_PERIOD_BACK_COUNTING 0x40 //Replace the field with the anti-solution each tick
 
 #define MENU_THEME_RED_EXPLOSION	  1001
 #define MENU_THEME_NEON_XXL			  1002
@@ -32,6 +34,8 @@
 #define MENU_FILE_SAVE_STATE		  3001
 #define MENU_FILE_SAVE_STATE_4X		  3002
 #define MENU_FILE_SAVE_STATE_16X	  3003
+#define MENU_FILE_SAVE_STATE_05X	  3004
+#define MENU_FILE_SAVE_STATE_01X	  3005
 
 namespace
 {
@@ -155,9 +159,11 @@ bool LightsOutApp::InitMenu()
 
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_NO_EDGES, L"Disable edges");
 
-	AppendMenu(MenuFile, MF_STRING, MENU_FILE_SAVE_STATE,     L"Save state 1x  size...");
-	AppendMenu(MenuFile, MF_STRING, MENU_FILE_SAVE_STATE_4X,  L"Save state 4x  size...");
-	AppendMenu(MenuFile, MF_STRING, MENU_FILE_SAVE_STATE_16X, L"Save state 16x size...");
+	AppendMenu(MenuFile, MF_STRING, MENU_FILE_SAVE_STATE,     L"Save state 1x   size...");
+	AppendMenu(MenuFile, MF_STRING, MENU_FILE_SAVE_STATE_4X,  L"Save state 4x   size...");
+	AppendMenu(MenuFile, MF_STRING, MENU_FILE_SAVE_STATE_16X, L"Save state 16x  size...");
+	AppendMenu(MenuFile, MF_STRING, MENU_FILE_SAVE_STATE_05X, L"Save state 0.5x size...");
+	AppendMenu(MenuFile, MF_STRING, MENU_FILE_SAVE_STATE_01X, L"Save state 0.1x size...");
 
 	SetMenu(mMainWnd, mMainMenu);
 
@@ -278,6 +284,16 @@ void LightsOutApp::OnMenuItem(WPARAM State)
 		SaveField(EXPECTED_WND_SIZE * 4);
 		break;
 	}
+	case MENU_FILE_SAVE_STATE_05X:
+	{
+		SaveField(EXPECTED_WND_SIZE / 2);
+		break;
+	}
+	case MENU_FILE_SAVE_STATE_01X:
+	{
+		SaveField(EXPECTED_WND_SIZE / 10);
+		break;
+	}
 	}
 }
 
@@ -300,44 +316,69 @@ void LightsOutApp::Update()
 		mRenderer.SetFieldBufferData(mGame.getField());
 	}
 
-	//If the period is counting now, redraw the field with derived field.
-	//Stop if we reached the start field.
+	//Soiution period is being counted, redraw the field with the derived field.
+	//Stop if we reached the first field.
 	if(mFlags & IS_PERIOD_COUNTING)
 	{
-		boost::dynamic_bitset<uint32_t> resolvent = mSolver.GetSolution(mGame);
-		if(mCountedField != resolvent)
-		{
-			mPeriodCount++;
-			mGame.ResetField(mGame.getSize(), RESET_RESOLVENT, &resolvent);
+		mPeriodCount++;
 
-			mRenderer.SetFieldBufferData(mGame.getField());
+		boost::dynamic_bitset<uint32_t> solution = mSolver.GetSolution(mGame);
+		mGame.ResetField(mGame.getSize(), RESET_RESOLVENT, &solution);
+
+		mRenderer.SetFieldBufferData(mGame.getField());
+		if (mFlags & SHOW_STABILITY)
+		{
+			mRenderer.SetStabilityBufferData(mGame.getStability());
 		}
-		else
+
+		if (mCountedField == solution)
 		{
-			mCountedField.clear();
+			mFlags &= ~IS_PERIOD_COUNTING; //Next tick we'll show the messagebox
+		}
+	}
 
-			WCHAR aaa[100];
-			swprintf_s(aaa, L"Resolvent period is %d", mPeriodCount + 1);
-			MessageBox(nullptr, aaa, L"Resolvent period", MB_OK);
+	//Soiution period is being counted backwards, redraw the field with the derived field.
+	//Stop if we reached the first field.
+	if(mFlags & IS_PERIOD_BACK_COUNTING)
+	{
+		mPeriodCount++;
 
-			mFlags &= ~IS_PERIOD_COUNTING;
-			mPeriodCount = 0;
-		}	
+		boost::dynamic_bitset<uint32_t> invsolution = mSolver.GetInverseSolution(mGame);
+		mGame.ResetField(mGame.getSize(), RESET_RESOLVENT, &invsolution);
+
+		mRenderer.SetFieldBufferData(mGame.getField());
+		if (mFlags & SHOW_STABILITY)
+		{
+			mRenderer.SetStabilityBufferData(mGame.getStability());
+		}
+
+		if (mCountedField == invsolution)
+		{
+			mFlags &= ~IS_PERIOD_BACK_COUNTING; //Next tick we'll show the messagebox
+		}
+	}
+
+	if((mFlags & IS_PERIOD_COUNTING) == 0 && (mFlags & IS_PERIOD_BACK_COUNTING) == 0 && mPeriodCount != 0) //Special state: no period flag is set, but period isn't zero. That means we've counted the period in the previous tick and now we should clean everything
+	{
+		mCountedField.clear();
+		MessageBox(nullptr, (L"Solution period is " + std::to_wstring(mPeriodCount)).c_str(), L"Soluion period", MB_OK);
+
+		mPeriodCount = 0;
 	}
 
 	if (mFlags & IS_PERIO4_COUNTING)
 	{
-		boost::dynamic_bitset<uint32_t> resolvent = mSolver.GetSolution(mGame);
-		mGame.ResetField(mGame.getSize(), RESET_RESOLVENT, &resolvent);
+		boost::dynamic_bitset<uint32_t> solution = mSolver.GetSolution(mGame);
+		mGame.ResetField(mGame.getSize(), RESET_RESOLVENT, &solution);
 
-		resolvent = mSolver.GetSolution(mGame);
-		mGame.ResetField(mGame.getSize(), RESET_RESOLVENT, &resolvent);
+		solution = mSolver.GetSolution(mGame);
+		mGame.ResetField(mGame.getSize(), RESET_RESOLVENT, &solution);
 
-		resolvent = mSolver.GetSolution(mGame);
-		mGame.ResetField(mGame.getSize(), RESET_RESOLVENT, &resolvent);
+		solution = mSolver.GetSolution(mGame);
+		mGame.ResetField(mGame.getSize(), RESET_RESOLVENT, &solution);
 
-		resolvent = mSolver.GetSolution(mGame);
-		mGame.ResetField(mGame.getSize(), RESET_RESOLVENT, &resolvent);
+		solution = mSolver.GetSolution(mGame);
+		mGame.ResetField(mGame.getSize(), RESET_RESOLVENT, &solution);
 
 		mRenderer.SetFieldBufferData(mGame.getField());
 	}
@@ -461,16 +502,19 @@ void LightsOutApp::ResetField(WPARAM key)
 	{
 	case VK_OEM_PLUS:
 	{
+		mFlags &= ~SHOW_STABILITY;
 		ChangeGameSize(mGame.getSize() + 1);
 		break;
 	}
 	case VK_OEM_MINUS:
 	{
+		mFlags &= ~SHOW_STABILITY;
 		ChangeGameSize(mGame.getSize() - 1);
 		break;
 	}
 	case 'S':
 	{
+		mFlags &= ~SHOW_STABILITY;
 		mFlags &= ~SHOW_SOLUTION;
 		mFlags |= IS_RANDOM_SOLVING;
 		mSolver.SolveGame(mGame);
@@ -478,65 +522,77 @@ void LightsOutApp::ResetField(WPARAM key)
 	}
 	case 'C':
 	{
+		mFlags &= ~SHOW_STABILITY;
 		mFlags &= ~SHOW_SOLUTION;
 		mFlags &= ~IS_RANDOM_SOLVING;
 		mSolver.SolveGame(mGame);
 		break;
 	}
-	/*case 'L': //DO NOT CALL. DEPRECATED.
-	{
-		mResolventFlag = false;
-		mIsRandomSolving = false;
-		mSolver.SolveGame(mGame);
-		mSolver.sortTurnsByCoolness(mGame);
-		break;
-	}*/
 	case 'R':
 	{
+		mFlags &= ~SHOW_STABILITY;
 		mFlags &= ~SHOW_SOLUTION;
 		mGame.ResetField(mGame.getSize(), RESET_SOLVABLE_RANDOM);
+		mGame.ResetStability();
 		break;
 	}
 	case 'F':
 	{
+		mFlags &= ~SHOW_STABILITY;
 		mFlags &= ~SHOW_SOLUTION;
 		mGame.ResetField(mGame.getSize(), RESET_FULL_RANDOM);
+		mGame.ResetStability();
 		break;
 	}
 	case '0':
 	{
+		mFlags &= ~SHOW_STABILITY;
 		mFlags &= ~SHOW_SOLUTION;
 		mGame.ResetField(mGame.getSize(), RESET_ZERO_ELEMENT);
+		mGame.ResetStability();
 		break;
 	}
 	case '1':
 	{
+		mFlags &= ~SHOW_STABILITY;
 		mFlags &= ~SHOW_SOLUTION;
 		mGame.ResetField(mGame.getSize(), RESET_ONE_ELEMENT);
+		mGame.ResetStability();
+		break;
+	}
+	case 'B':
+	{
+		mFlags &= ~SHOW_STABILITY;
+		mFlags &= ~SHOW_SOLUTION;
+		mGame.ResetField(mGame.getSize(), RESET_BLATNOY);
+		mGame.ResetStability();
 		break;
 	}
 	case 'A':
 	{
 		mFlags &= ~SHOW_SOLUTION;
-		mGame.ResetField(mGame.getSize(), RESET_CLICK_ALL);
-		break;
-	}
-	case 'B':
-	{
-		mFlags &= ~SHOW_SOLUTION;
-		mGame.ResetField(mGame.getSize(), RESET_BLATNOY);
+		mFlags ^= SHOW_STABILITY;
+		if (mFlags & SHOW_STABILITY)
+		{
+			auto stability = mGame.getStability();
+			mRenderer.SetStabilityBufferData(stability);
+		}
 		break;
 	}
 	case 'P':
 	{
+		mFlags &= ~SHOW_STABILITY;
 		mFlags &= ~SHOW_SOLUTION;
 		mGame.ResetField(mGame.getSize(), RESET_PETYA_STYLE);
+		mGame.ResetStability();
 		break;
 	}
 	case 'O':
 	{
+		mFlags &= ~SHOW_STABILITY;
 		mFlags &= ~SHOW_SOLUTION;
 		mGame.ResetField(mGame.getSize(), RESET_BORDER);
+		mGame.ResetStability();
 		break;
 	}
 	case 'E':
@@ -544,9 +600,16 @@ void LightsOutApp::ResetField(WPARAM key)
 		if(mFlags & SHOW_SOLUTION)
 		{
 			mGame.ResetField(mGame.getSize(), RESET_RESOLVENT, &mSolution);
+			mRenderer.SetStabilityBufferData(mGame.getStability());
+			mFlags &= ~SHOW_SOLUTION;
 		}
-
-		mFlags &= ~SHOW_SOLUTION;
+		else if (mFlags & SHOW_STABILITY)
+		{
+			mGame.ResetField(mGame.getSize(), RESET_RESOLVENT, &mGame.getStability());
+			mGame.ResetStability();
+			mRenderer.SetStabilityBufferData(mGame.getStability());
+			mFlags &= ~SHOW_STABILITY;
+		}
 
 		break;
 	}
@@ -572,7 +635,7 @@ void LightsOutApp::ResetField(WPARAM key)
 
 		if (mFlags & SHOW_SOLUTION)
 		{
-			mSolution = mSolver.GetInverseResolvent(mGame);
+			mSolution = mSolver.GetInverseSolution(mGame);
 			mRenderer.SetSolutionBufferData(mSolution);
 		}
 		else
@@ -584,15 +647,18 @@ void LightsOutApp::ResetField(WPARAM key)
 	}
 	case 'I':
 	{
+		mFlags &= ~SHOW_STABILITY;
 		mFlags &= ~SHOW_SOLUTION;
 
 		boost::dynamic_bitset<uint32_t> invertSolution = ~(mGame.getField());
 		mGame.ResetField(mGame.getSize(), RESET_RESOLVENT, &invertSolution);
+		mGame.ResetStability();
 		break;
 	}
 	case 'V':
 	{
 		mFlags &= ~IS_PERIO4_COUNTING;
+		mFlags &= ~IS_PERIOD_BACK_COUNTING;
 
 		if(!(mFlags & IS_PERIOD_COUNTING))
 		{
@@ -611,6 +677,7 @@ void LightsOutApp::ResetField(WPARAM key)
 	case 'X':
 	{
 		mFlags &= ~IS_PERIOD_COUNTING;
+		mFlags &= ~IS_PERIOD_BACK_COUNTING;
 
 		if (!(mFlags & IS_PERIO4_COUNTING))
 		{
@@ -622,9 +689,30 @@ void LightsOutApp::ResetField(WPARAM key)
 		}
 		break;
 	}
+	case 'Z':
+	{
+		mFlags &= ~IS_PERIOD_COUNTING;
+		mFlags &= ~IS_PERIO4_COUNTING;
+
+		if (!(mFlags & IS_PERIOD_BACK_COUNTING))
+		{
+			mFlags |= IS_PERIOD_BACK_COUNTING;
+			mCountedField = mGame.getField();
+		}
+		else
+		{
+			mFlags &= ~IS_PERIOD_BACK_COUNTING;
+			mCountedField.clear();
+		}
+
+		mPeriodCount = 0;
+
+		break;
+	}
 	}
 
 	mRenderer.SetSolutionVisible((mFlags & SHOW_SOLUTION) != 0);
+	mRenderer.SetStabilityVisible(((mFlags & SHOW_SOLUTION) == 0) && (mFlags & SHOW_STABILITY) != 0);
 	mRenderer.SetFieldBufferData(mGame.getField());
 }
 

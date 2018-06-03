@@ -2,8 +2,8 @@ cbuffer cbParams: register(b0)
 {
 	uint gFieldSize;
 	uint gCellSize;
-	bool gSolutionVisible;
-	uint gCompressedTurn; //Coordinates of hint
+	int  gSolutionVisible;
+	int  gStabilityVisible;
 
 	float4 gColorNone;
 	float4 gColorEnabled;
@@ -11,8 +11,9 @@ cbuffer cbParams: register(b0)
 	float4 gColorBetween;
 };
 
-Buffer<uint> Field:    register(t0); //Field in compressed uint32_t-format
-Buffer<uint> Solution: register(t1); //Solution in compressed uint32_t-format
+Buffer<uint> Field:     register(t0); //Field in compressed uint32_t-format
+Buffer<uint> Solution:  register(t1); //Solution in compressed uint32_t-format
+Buffer<uint> Stability: register(t2); //Stability in compressed uint32_t-format
 
 RWTexture2D<float4> Result: register(u0); //Drawn field
 
@@ -54,15 +55,14 @@ void main(uint3 DTid: SV_DispatchThreadID)
 				result = gColorSolved;
 			}
 		}
-		else //We are not showing the solution
+		else if(gStabilityVisible)
 		{
-			uint hintTurnX = gCompressedTurn >> 16;
-			uint hintTurnY = gCompressedTurn & 0xffff;
+			bool cellStable = (Stability[compressedCellGroupNumber] >> compressedCellNumber) & 1; //Getting the bit of cell
 
 			[flatten]
-			if(cellNumber.x == hintTurnX && cellNumber.x == hintTurnY) //This cell is a hint cell
+			if (cellStable)
 			{
-				result = gColorSolved;
+				result = float4(1.0f, 1.0f, 1.0f, 1.0f) - gColorEnabled;
 			}
 		}
 	}

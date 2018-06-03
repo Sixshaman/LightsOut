@@ -2,8 +2,8 @@ cbuffer cbParams: register(b0)
 {
 	uint gFieldSize;
 	uint gCellSize;
-	bool gSolutionVisible;
-	uint gCompressedTurn; //Coordinates of hint
+	int  gSolutionVisible;
+	int  gStabilityVisible;
 
 	float4 gColorNone;
 	float4 gColorEnabled;
@@ -11,8 +11,9 @@ cbuffer cbParams: register(b0)
 	float4 gColorBetween;
 };
 
-Buffer<uint> Field:    register(t0); //Field in compressed uint32_t-format
-Buffer<uint> Solution: register(t1); //Solution in compressed uint32_t-format
+Buffer<uint> Field:     register(t0); //Field in compressed uint32_t-format
+Buffer<uint> Solution:  register(t1); //Solution in compressed uint32_t-format
+Buffer<uint> Stability: register(t2); //Stability in compressed uint32_t-format
 
 RWTexture2D<float4> Result: register(u0); //Drawn field
 
@@ -34,6 +35,16 @@ bool IsCellActivatedSolution(uint2 cellNumber)
 	uint compressedCellNumber = cellNumberAll % 32; //Number of bit of that cell
 
 	return (Solution[compressedCellGroupNumber] >> compressedCellNumber) & 1; //Getting the bit of cell
+}
+
+bool IsCellActivatedStability(uint2 cellNumber)
+{
+	uint cellNumberAll = cellNumber.y * gFieldSize + cellNumber.x; //Number of cell
+
+	uint compressedCellGroupNumber = cellNumberAll / 32; //Element of Field that contains that cell
+	uint compressedCellNumber      = cellNumberAll % 32; //Number of bit of that cell
+
+	return (Stability[compressedCellGroupNumber] >> compressedCellNumber) & 1; //Getting the bit of cell
 }
 
 [numthreads(16, 16, 1)]
@@ -70,11 +81,8 @@ void main(uint3 DTid: SV_DispatchThreadID)
 			result = gColorNone;
 		}
 
-		uint hintTurnX = gCompressedTurn >> 16;
-		uint hintTurnY = gCompressedTurn & 0xffff;
-
 		[flatten]
-		if(gSolutionVisible || cellNumber.x == hintTurnX && cellNumber.x == hintTurnY) //We are showing the solution
+		if(gSolutionVisible) //We are showing the solution
 		{
 			bool cellSolved = IsCellActivatedSolution(cellNumber);
 
@@ -88,6 +96,22 @@ void main(uint3 DTid: SV_DispatchThreadID)
 			if(cellSolved && (insideCircle || circleEdgeSolved))
 			{
 				result = gColorSolved;
+			}
+		}
+		else if (gStabilityVisible)
+		{
+			bool cellStable = IsCellActivatedStability(cellNumber);
+
+			bool leftPartStable   = cellNumber.x > 0              && IsCellActivatedStability(cellNumber + int2(-1,  0));
+			bool rightPartStable  = cellNumber.x < gFieldSize - 1 && IsCellActivatedStability(cellNumber + int2( 1,  0));
+			bool topPartStable    = cellNumber.y > 0              && IsCellActivatedStability(cellNumber + int2( 0, -1));
+			bool bottomPartStable = cellNumber.y < gFieldSize - 1 && IsCellActivatedStability(cellNumber + int2( 0,  1));
+
+			bool circleEdgeStable = (leftPartStable && cellCoord.x <= 0) || (topPartStable && cellCoord.y <= 0) || (rightPartStable && cellCoord.x >= 0) || (bottomPartStable && cellCoord.y >= 0);
+
+			if(cellStable && (insideCircle || circleEdgeStable))
+			{
+				result = float4(1.0f, 1.0f, 1.0f, 1.0f) - gColorEnabled;
 			}
 		}
 	}

@@ -3,12 +3,14 @@
 
 ID3D11ShaderResourceView* LOTextures::mFieldSRV = nullptr; 
 ID3D11ShaderResourceView* LOTextures::mSolutionSRV = nullptr; 
+ID3D11ShaderResourceView* LOTextures::mStabilitySRV = nullptr;
 ID3D11ShaderResourceView* LOTextures::mResultSRV = nullptr;
 ID3D11UnorderedAccessView* LOTextures::mResultUAV = nullptr; 
 ID3D11ShaderResourceView* LOTextures::mResultToSaveSRV = nullptr;
 ID3D11UnorderedAccessView* LOTextures::mResultToSaveUAV = nullptr;
 ID3D11Buffer* LOTextures::mFieldBuf = nullptr;
 ID3D11Buffer* LOTextures::mSolutionBuf = nullptr;
+ID3D11Buffer* LOTextures::mStabilityBuf = nullptr;
 ID3D11Texture2D* LOTextures::mResultCopy = nullptr;
 
 bool LOTextures::InitSRVs(ID3D11Device* device)
@@ -17,8 +19,7 @@ bool LOTextures::InitSRVs(ID3D11Device* device)
 
 	uint32_t maxFieldSize = (uint32_t)ceilf((MAXIMUM_FIELD_SIZE * MAXIMUM_FIELD_SIZE) / 32.0f); //Even the field of maximum size can fit here
 
-	std::vector<uint32_t> fieldVec(maxFieldSize,    0); //Compressed field
-	std::vector<uint32_t> solutionVec(maxFieldSize, 0); //Compressed solution
+	std::vector<uint32_t> fieldVec(maxFieldSize, 0); //Compressed field
 
 	D3D11_BUFFER_DESC fieldDesc;
 	fieldDesc.Usage               = D3D11_USAGE_DYNAMIC;
@@ -36,8 +37,15 @@ bool LOTextures::InitSRVs(ID3D11Device* device)
 		return false;
 	}
 	
-	fieldData.pSysMem = &solutionVec[0];
+	fieldData.pSysMem = &fieldVec[0];
 	if(FAILED(device->CreateBuffer(&fieldDesc, &fieldData, &mSolutionBuf)))
+	{
+		MessageBox(nullptr, L"Solve texture creation error!", L"Error", MB_ICONERROR | MB_OK);
+		return false;
+	}
+
+	fieldData.pSysMem = &fieldVec[0];
+	if (FAILED(device->CreateBuffer(&fieldDesc, &fieldData, &mStabilityBuf)))
 	{
 		MessageBox(nullptr, L"Solve texture creation error!", L"Error", MB_ICONERROR | MB_OK);
 		return false;
@@ -61,6 +69,12 @@ bool LOTextures::InitSRVs(ID3D11Device* device)
 		return false;
 	}
 
+	if (FAILED(device->CreateShaderResourceView(mStabilityBuf, &srvDesc, &mStabilitySRV)))
+	{
+		MessageBox(nullptr, L"Stability SRV creation error!", L"Error", MB_ICONERROR | MB_OK);
+		return false;
+	}
+
 	return true;
 }
 
@@ -68,12 +82,14 @@ void LOTextures::DestroyAll()
 {
 	SafeRelease(mFieldSRV);
 	SafeRelease(mSolutionSRV);
+	SafeRelease(mStabilitySRV);
 	SafeRelease(mResultSRV);
 	SafeRelease(mResultUAV);
 	SafeRelease(mResultToSaveSRV);
 	SafeRelease(mResultToSaveUAV);
 	SafeRelease(mFieldBuf);
 	SafeRelease(mSolutionBuf);
+	SafeRelease(mStabilityBuf);
 	SafeRelease(mResultCopy);
 }
 
@@ -156,7 +172,21 @@ void LOTextures::UpdateSolution(boost::dynamic_bitset<uint32_t> solution, ID3D11
 	dc->Unmap(mSolutionBuf, 0);
 }
 
-ID3D11Texture2D* LOTextures::getMappedTex(ID3D11DeviceContext* dc)
+void LOTextures::UpdateStability(boost::dynamic_bitset<uint32_t> stability, ID3D11DeviceContext * dc)
+{
+	uint32_t maxFieldSize = (uint32_t)ceilf((MAXIMUM_FIELD_SIZE * MAXIMUM_FIELD_SIZE) / 32.0f);
+
+	std::vector<uint32_t> stabVec(maxFieldSize);
+	boost::to_block_range<uint32_t>(stability, stabVec.begin());
+
+	D3D11_MAPPED_SUBRESOURCE stabSubresource;
+	dc->Map(mStabilityBuf, 0, D3D11_MAP_WRITE_DISCARD, 0, &stabSubresource);
+	uint32_t* stabData = reinterpret_cast<uint32_t*>(stabSubresource.pData);
+	memcpy(stabData, &stabVec[0], maxFieldSize * sizeof(uint32_t));
+	dc->Unmap(mStabilityBuf, 0);
+}
+
+ID3D11Texture2D* LOTextures::MappedTex(ID3D11DeviceContext* dc)
 {
 	ID3D11Resource *result = nullptr;
 	mResultSRV->GetResource(&result);

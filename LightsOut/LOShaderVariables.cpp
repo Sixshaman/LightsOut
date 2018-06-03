@@ -60,10 +60,10 @@ void ComputeFieldVariables::SetCSVariables(ID3D11DeviceContext *dc)
 
 	dc->CSSetConstantBuffers(0, 1, &mCSCbuffer);
 
-	ID3D11ShaderResourceView *SRVs[2] = {LOTextures::getFieldSRV(), LOTextures::getSolutionSRV()};
-	dc->CSSetShaderResources(0, 2, SRVs);
+	ID3D11ShaderResourceView *SRVs[3] = {LOTextures::FieldSRV(), LOTextures::SolutionSRV(), LOTextures::StabilitySRV()};
+	dc->CSSetShaderResources(0, 3, SRVs);
 
-	ID3D11UnorderedAccessView *UAVs[1] = {LOTextures::getResultUAV()};
+	ID3D11UnorderedAccessView *UAVs[1] = {LOTextures::ResultUAV()};
 	dc->CSSetUnorderedAccessViews(0, 1, UAVs, nullptr);
 }
 
@@ -72,8 +72,8 @@ void ComputeFieldVariables::DisableVariables(ID3D11DeviceContext *dc)
 	ID3D11Buffer* nullcbuffer = {nullptr};
 	dc->CSSetConstantBuffers(0, 1, &nullcbuffer);
 
-	ID3D11ShaderResourceView *nullsrv[2] = {nullptr, nullptr};
-	dc->CSSetShaderResources(0, 2, nullsrv);
+	ID3D11ShaderResourceView *nullsrv[3] = {nullptr, nullptr, nullptr};
+	dc->CSSetShaderResources(0, 3, nullsrv);
 
 	ID3D11UnorderedAccessView *nulluav[1] = {nullptr};
 	dc->CSSetUnorderedAccessViews(0, 1, nulluav, nullptr);
@@ -94,9 +94,9 @@ void ComputeFieldVariables::SetSolutionVisible(bool solveVisible)
 	mCSCBufferCopy.SolveVisible = solveVisible;
 }
 
-void ComputeFieldVariables::SetHintTurn(USHORT strokeX, USHORT strokeY)
+void ComputeFieldVariables::SetStabilityVisible(bool stabilityVisible)
 {
-	mCSCBufferCopy.CompressedTurn = ((uint32_t)strokeX << 16) | strokeY;
+	mCSCBufferCopy.StabilityVisible = stabilityVisible;
 }
 
 void ComputeFieldVariables::SetColorNone(XMVECTOR colorNone)
@@ -159,7 +159,7 @@ void DrawScreenVariables::DestroyAll()
 
 void DrawScreenVariables::SetAllVariables(ID3D11DeviceContext *dc)
 {
-	ID3D11ShaderResourceView* targetTex = LOTextures::getResultSRV();
+	ID3D11ShaderResourceView* targetTex = LOTextures::ResultSRV();
 	dc->PSSetShaderResources(0, 1, &targetTex);
 
 	ID3D11SamplerState* TextureSS = RenderStates::TextureSS();

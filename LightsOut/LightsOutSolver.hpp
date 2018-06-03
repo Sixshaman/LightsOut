@@ -29,10 +29,7 @@ public:
 	PointOnField GetHint(LightsOutGame &game);
 
 	boost::dynamic_bitset<uint32_t> GetSolution(LightsOutGame &game);
-	boost::dynamic_bitset<uint32_t> GetInverseResolvent(LightsOutGame &game);
-
-	/*[deprecated]*/
-	//void SortStrokesByCoolness(LightsOutGame &game); //DO NOT CALL THIS METHOD
+	boost::dynamic_bitset<uint32_t> GetInverseSolution(LightsOutGame &game);
 
 	PointOnField GetRandomTurn();
 	PointOnField GetFirstTurn();
@@ -47,14 +44,14 @@ private:
 private:
 	bool mSolvingFlag; //True if you are allowed to take values from mTurns
 
-	boost::dynamic_bitset<uint32_t> mResolvent; //The solution in dynamic_bitset representation
-	std::vector<PointOnField> mTurns;		//The solution in PointOnField representation
+	boost::dynamic_bitset<uint32_t> mSolution; //The solution in dynamic_bitset representation
+	std::vector<PointOnField> mTurns;		   //The solution in PointOnField representation
 
-	boost::dynamic_bitset<uint32_t> mInverseResolvent; //The anti-solution in dynamic_bitset representation
+	boost::dynamic_bitset<uint32_t> mInverseSolution; //The anti-solution in dynamic_bitset representation
 
 	LOMatrix mInvSolvingMatrix;  //
-	bool mSolvingInversed;		 //For solution caching 
-	unsigned short mCurrentSize; //
+	bool mSolvingInverted;		 //For solution caching 
+	unsigned short mCurrentSize; //Current game size
 };
 
 #endif

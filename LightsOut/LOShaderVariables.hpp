@@ -14,8 +14,8 @@ struct CS_CBUFFER
 {
 	uint32_t FieldSize;
 	uint32_t CellSize;
-	bool SolveVisible;
-	uint32_t CompressedTurn; //First 16 bit is the x-coord of hint. Second 16 bit is the y-coord of hint.
+	int      SolveVisible;
+	int      StabilityVisible;
 
 	XMFLOAT4 ColorNone;
 	XMFLOAT4 ColorEnabled;
@@ -39,7 +39,7 @@ public:
 	static void SetFieldSize(uint32_t fieldSize);
 	static void SetCellSize(uint32_t cellSize);
 	static void SetSolutionVisible(bool solveVisible);
-	static void SetHintTurn(USHORT strokeX, USHORT strokeY);
+	static void SetStabilityVisible(bool stabilityVisible);
 
 	static void SetColorNone(XMVECTOR colorNone);
 	static void SetColorEnabled(XMVECTOR colorEnabled);

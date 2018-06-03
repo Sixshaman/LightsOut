@@ -12,8 +12,18 @@ LightsOutGame::~LightsOutGame()
 
 void LightsOutGame::ResetField(unsigned short size, RESET_MODE mode, boost::dynamic_bitset<uint32_t> *resolvent)
 {
+	uint32_t si_si = size * size;
+	if(mSize != size)
+	{
+		mStability.resize(si_si, true);
+	}
+
+	if(mode == RESET_RESOLVENT && resolvent)
+	{
+		mStability = mStability & (~(mMainField ^ *resolvent));
+	}
+
 	mSize = size;
-	uint32_t si_si = size*size;
 
 	mMainField.clear();
 	mMainField.resize(si_si);
@@ -21,7 +31,6 @@ void LightsOutGame::ResetField(unsigned short size, RESET_MODE mode, boost::dyna
 	mMainField.reset();
 
 	std::random_device rd;
-
 	for(unsigned short i = 0; i < si_si; i++)
 	{
 		std::mt19937 gen(rd());
@@ -44,14 +53,15 @@ void LightsOutGame::ResetField(unsigned short size, RESET_MODE mode, boost::dyna
 		case RESET_ONE_ELEMENT:
 			mMainField.set(i, true);
 			break;
-		case RESET_CLICK_ALL:
-			Click(i / size, i % size);
-			break;
 		case RESET_BLATNOY:
-			if((i / size)%2 == (i % size)%2)
+			if((i / size) % 2 == (i % size) % 2)
+			{
 				mMainField.set(i, 1);
+			}
 			else
+			{
 				mMainField.set(i, 0);
+			}
 			break;
 		case RESET_PETYA_STYLE:
 			if((i / size) % 2)
@@ -84,6 +94,12 @@ void LightsOutGame::ResetField(unsigned short size, RESET_MODE mode, boost::dyna
 			break;
 		}
 	}
+}
+
+void LightsOutGame::ResetStability()
+{
+	mStability.reset();
+	mStability = ~mStability;
 }
 
 void LightsOutGame::Click(unsigned short posX, unsigned short posY)

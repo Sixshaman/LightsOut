@@ -2,8 +2,8 @@ cbuffer cbParams: register(b0)
 {
 	uint gFieldSize;
 	uint gCellSize;
-	bool gSolutionVisible;
-	uint gCompressedTurn; //Coordinates of hint
+	int  gSolutionVisible;
+	int  gStabilityVisible;
 
 	float4 gColorNone;
 	float4 gColorEnabled;
@@ -11,8 +11,9 @@ cbuffer cbParams: register(b0)
 	float4 gColorBetween;
 };
 
-Buffer<uint> Field:    register(t0); //Field in compressed uint32_t-format
-Buffer<uint> Solution: register(t1); //Solution in compressed uint32_t-format
+Buffer<uint> Field:     register(t0); //Field in compressed uint32_t-format
+Buffer<uint> Solution:  register(t1); //Solution in compressed uint32_t-format
+Buffer<uint> Stability: register(t2); //Stability in compressed uint32_t-format
 
 RWTexture2D<float4> Result: register(u0); //Drawn field
 
@@ -34,6 +35,16 @@ bool IsCellActivatedSolution(uint2 cellNumber)
 	uint compressedCellNumber      = cellNumberAll % 32; //Number of bit of that cell
 
 	return (Solution[compressedCellGroupNumber] >> compressedCellNumber) & 1; //Getting the bit of cell
+}
+
+bool IsCellActivatedStability(uint2 cellNumber)
+{
+	uint cellNumberAll = cellNumber.y * gFieldSize + cellNumber.x; //Number of cell
+
+	uint compressedCellGroupNumber = cellNumberAll / 32; //Element of Field that contains that cell
+	uint compressedCellNumber      = cellNumberAll % 32; //Number of bit of that cell
+
+	return (Stability[compressedCellGroupNumber] >> compressedCellNumber) & 1; //Getting the bit of cell
 }
 
 [numthreads(16, 16, 1)]
@@ -119,11 +130,8 @@ void main(uint3 DTid: SV_DispatchThreadID)
 			}
 		}
 
-		uint hintTurnX = gCompressedTurn >> 16;
-		uint hintTurnY = gCompressedTurn & 0xffff;
-
 		[flatten]
-		if(gSolutionVisible || cellNumber.x == hintTurnX && cellNumber.x == hintTurnY) //We are showing the solution
+		if(gSolutionVisible) //We are showing the solution
 		{
 			bool cellSolved = IsCellActivatedSolution(cellNumber);
 
@@ -153,10 +161,6 @@ void main(uint3 DTid: SV_DispatchThreadID)
 				{
 					result = gColorSolved;
 				}
-				else
-				{
-					result = gColorNone;
-				}
 			}
 			else
 			{
@@ -164,9 +168,44 @@ void main(uint3 DTid: SV_DispatchThreadID)
 				{
 					result = gColorSolved;
 				}
-				else
+			}
+		}
+		else if (gStabilityVisible)
+		{
+			bool cellStable = IsCellActivatedStability(cellNumber);
+
+			bool leftPartStable        = cellNumber.x > 0                                               && IsCellActivatedStability(cellNumber + int2(-1,  0));
+			bool rightPartStable       = cellNumber.x < gFieldSize - 1                                  && IsCellActivatedStability(cellNumber + int2( 1,  0));
+			bool topPartStable         =                                  cellNumber.y > 0              && IsCellActivatedStability(cellNumber + int2( 0, -1));
+			bool bottomPartStable      =                                  cellNumber.y < gFieldSize - 1 && IsCellActivatedStability(cellNumber + int2( 0,  1));
+			bool leftTopPartStable     = cellNumber.x > 0              && cellNumber.y > 0              && IsCellActivatedStability(cellNumber + int2(-1, -1));
+			bool rightTopPartStable    = cellNumber.x < gFieldSize - 1 && cellNumber.y > 0              && IsCellActivatedStability(cellNumber + int2( 1, -1));
+			bool leftBottomPartStable  = cellNumber.y < gFieldSize - 1 && cellNumber.x > 0              && IsCellActivatedStability(cellNumber + int2(-1,  1));
+			bool rightBottomPartStable = cellNumber.x < gFieldSize - 1 && cellNumber.y < gFieldSize - 1 && IsCellActivatedStability(cellNumber + int2( 1,  1));
+			bool left2PartStable       = cellNumber.x > 1                                               && IsCellActivatedStability(cellNumber + int2(-2,  0));
+			bool right2PartStable      = cellNumber.x < iFieldSize - 2                                  && IsCellActivatedStability(cellNumber + int2( 2,  0));
+			bool top2PartStable        =                                  cellNumber.y > 1              && IsCellActivatedStability(cellNumber + int2( 0, -2));
+			bool bottom2PartStable     =                                  cellNumber.y < iFieldSize - 2 && IsCellActivatedStability(cellNumber + int2( 0,  2));
+
+			bool circleEdgeStable        = (leftPartStable                     && cellCoord.x <= 0                    ) || (                      topPartStable &&                     cellCoord.y <= 0) || (rightPartStable       &&                     cellCoord.x >= 0)                     || (                        bottomPartStable &&                     cellCoord.y >= 0);
+			bool circleCornerStable      = (leftTopPartStable                  && cellCoord.x <= 0 && cellCoord.y <= 0) || (rightTopPartStable &&                  cellCoord.x >= 0 && cellCoord.y <= 0) || (rightBottomPartStable &&                     cellCoord.x >= 0 && cellCoord.y >= 0) || (leftBottomPartStable &&                     cellCoord.x <= 0 && cellCoord.y >= 0);
+			bool circleEmptyCornerStable = (leftPartStable    && topPartStable && cellCoord.x <= 0 && cellCoord.y <= 0) || (rightPartStable    && topPartStable && cellCoord.x >= 0 && cellCoord.y <= 0) || (rightPartStable       && bottomPartStable && cellCoord.x >= 0 && cellCoord.y >= 0) || (leftPartStable       && bottomPartStable && cellCoord.x <= 0 && cellCoord.y >= 0);
+
+			bool slimEmptyCenterStable = (topPartStable && bottomPartStable && !insideCircleBigL && !insideCircleBigR) || (leftPartStable && rightPartStable && !insideCircleBigT && !insideCircleBigB);
+			bool slimEdgeStable        = (top2PartStable && !insideCircleBigLT && !insideCircleBigLB && cellCoord.x <= -0.707f * gCellSize / 2) || (right2PartStable && !insideCircleBigRT && !insideCircleBigRB && cellCoord.x >= 0.707f * gCellSize / 2) || (top2PartStable && !insideCircleBigLT && !insideCircleBigRT && cellCoord.y <= -0.707f * gCellSize / 2) || (bottom2PartStable && !insideCircleBigLB && !insideCircleBigRB && cellCoord.y >= 0.707f * gCellSize / 2);
+
+			if(cellStable)
+			{
+				if(insideCircle || circleEdgeStable || circleCornerStable || slimEdgeStable)
 				{
-					result = gColorNone;
+					result = float4(1.0f, 1.0f, 1.0f, 1.0f) - gColorEnabled;
+				}
+			}
+			else
+			{
+				if((!insideCircle && circleEmptyCornerStable) || slimEmptyCenterStable)
+				{
+					result = float4(1.0f, 1.0f, 1.0f, 1.0f) - gColorEnabled;
 				}
 			}
 		}
