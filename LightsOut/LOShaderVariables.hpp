@@ -14,8 +14,8 @@ struct CS_CBUFFER
 {
 	uint32_t FieldSize;
 	uint32_t CellSize;
-	int      SolveVisible;
-	int      StabilityVisible;
+	uint32_t SolveVisible;
+	uint32_t StabilityVisible;
 
 	XMFLOAT4 ColorNone;
 	XMFLOAT4 ColorEnabled;
