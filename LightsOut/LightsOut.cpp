@@ -316,6 +316,14 @@ void LightsOutApp::Update()
 		mRenderer.SetFieldBufferData(mGame.getField());
 	}
 
+	if((mFlags & IS_PERIOD_COUNTING) == 0 && (mFlags & IS_PERIOD_BACK_COUNTING) == 0 && mPeriodCount != 0) //Special state: no period flag is set, but period isn't zero. That means we've counted the period in the previous tick and now we should clean everything
+	{
+		mCountedField.clear();
+		MessageBox(nullptr, (L"Solution period is " + std::to_wstring(mPeriodCount)).c_str(), L"Soluion period", MB_OK);
+
+		mPeriodCount = 0;
+	}
+
 	//Soiution period is being counted, redraw the field with the derived field.
 	//Stop if we reached the first field.
 	if(mFlags & IS_PERIOD_COUNTING)
@@ -356,14 +364,6 @@ void LightsOutApp::Update()
 		{
 			mFlags &= ~IS_PERIOD_BACK_COUNTING; //Next tick we'll show the messagebox
 		}
-	}
-
-	if((mFlags & IS_PERIOD_COUNTING) == 0 && (mFlags & IS_PERIOD_BACK_COUNTING) == 0 && mPeriodCount != 0) //Special state: no period flag is set, but period isn't zero. That means we've counted the period in the previous tick and now we should clean everything
-	{
-		mCountedField.clear();
-		MessageBox(nullptr, (L"Solution period is " + std::to_wstring(mPeriodCount)).c_str(), L"Soluion period", MB_OK);
-
-		mPeriodCount = 0;
 	}
 
 	if (mFlags & IS_PERIO4_COUNTING)
