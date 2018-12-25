@@ -18,6 +18,11 @@ public:
 	boost::dynamic_bitset<uint32_t> GetSolution(const boost::dynamic_bitset<uint32_t>& board, uint16_t gameSize, const LightsOutClickRule* clickRule);
 	boost::dynamic_bitset<uint32_t> GetInverseSolution(const boost::dynamic_bitset<uint32_t>& board, uint16_t gameSize, const LightsOutClickRule* clickRule);
 
+	boost::dynamic_bitset<uint32_t> MoveLeft(const boost::dynamic_bitset<uint32_t>& board, uint16_t gameSize);
+	boost::dynamic_bitset<uint32_t> MoveRight(const boost::dynamic_bitset<uint32_t>& board, uint16_t gameSize);
+	boost::dynamic_bitset<uint32_t> MoveUp(const boost::dynamic_bitset<uint32_t>& board, uint16_t gameSize);
+	boost::dynamic_bitset<uint32_t> MoveDown(const boost::dynamic_bitset<uint32_t>& board, uint16_t gameSize);
+
 private:
 	void GenerateInverseMatrix(uint16_t size, const LightsOutClickRule* clickRule);
 

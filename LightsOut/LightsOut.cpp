@@ -538,6 +538,70 @@ void LightsOutApp::ResetBoard(WPARAM key)
 		ChangeGameSize(mGame.GetSize() - 1);
 		break;
 	}
+	case VK_LEFT:
+	{
+		mFlags &= ~SHOW_STABILITY;
+
+		auto leftBoard = mGame.GetBoard();
+		leftBoard = mSolver.MoveLeft(leftBoard, mGame.GetSize());
+		mGame.Reset(mGame.GetSize(), leftBoard, 0);
+
+		if(mFlags & SHOW_SOLUTION)
+		{
+			mSolution = mSolver.GetSolution(mGame.GetBoard(), mGame.GetSize(), mGame.GetClickRule());
+			mRenderer.SetSolutionBufferData(mSolution);
+		}
+
+		break;
+	}
+	case VK_RIGHT:
+	{
+		mFlags &= ~SHOW_STABILITY;
+
+		auto rightBoard = mGame.GetBoard();
+		rightBoard = mSolver.MoveRight(rightBoard, mGame.GetSize());
+		mGame.Reset(mGame.GetSize(), rightBoard, 0);
+
+		if (mFlags & SHOW_SOLUTION)
+		{
+			mSolution = mSolver.GetSolution(mGame.GetBoard(), mGame.GetSize(), mGame.GetClickRule());
+			mRenderer.SetSolutionBufferData(mSolution);
+		}
+
+		break;
+	}
+	case VK_UP:
+	{
+		mFlags &= ~SHOW_STABILITY;
+
+		auto upBoard = mGame.GetBoard();
+		upBoard = mSolver.MoveUp(upBoard, mGame.GetSize());
+		mGame.Reset(mGame.GetSize(), upBoard, 0);
+
+		if (mFlags & SHOW_SOLUTION)
+		{
+			mSolution = mSolver.GetSolution(mGame.GetBoard(), mGame.GetSize(), mGame.GetClickRule());
+			mRenderer.SetSolutionBufferData(mSolution);
+		}
+
+		break;
+	}
+	case VK_DOWN:
+	{
+		mFlags &= ~SHOW_STABILITY;
+
+		auto downBoard = mGame.GetBoard();
+		downBoard = mSolver.MoveDown(downBoard, mGame.GetSize());
+		mGame.Reset(mGame.GetSize(), downBoard, 0);
+
+		if (mFlags & SHOW_SOLUTION)
+		{
+			mSolution = mSolver.GetSolution(mGame.GetBoard(), mGame.GetSize(), mGame.GetClickRule());
+			mRenderer.SetSolutionBufferData(mSolution);
+		}
+
+		break;
+	}
 	case 'S':
 	{
 		mFlags &= ~SHOW_STABILITY;

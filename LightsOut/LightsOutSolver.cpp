@@ -65,7 +65,10 @@ void LightsOutSolver::GenerateInverseMatrix(uint16_t size, const LightsOutClickR
 
 boost::dynamic_bitset<uint32_t> LightsOutSolver::GetSolution(const boost::dynamic_bitset<uint32_t>& board, uint16_t gameSize, const LightsOutClickRule* clickRule)
 {
+	int si_si = gameSize * gameSize;
+
 	boost::dynamic_bitset<uint32_t> solution;
+	solution.resize(si_si, false);
 
 	if(board.none())
 	{
@@ -82,9 +85,6 @@ boost::dynamic_bitset<uint32_t> LightsOutSolver::GetSolution(const boost::dynami
 	{
 		GenerateInverseMatrix(gameSize, clickRule);
 	}
-
-	int si_si = gameSize * gameSize;
-	solution.resize(si_si, false);
 
 	//Calculate the solution by multiplying inverse matrix by board vector
 	for (int i = 0; i < si_si; i++)
@@ -119,5 +119,109 @@ boost::dynamic_bitset<uint32_t> LightsOutSolver::GetInverseSolution(const boost:
 	}
 
 	return inverseSolution;
+}
+
+boost::dynamic_bitset<uint32_t> LightsOutSolver::MoveLeft(const boost::dynamic_bitset<uint32_t>& board, uint16_t gameSize)
+{
+	boost::dynamic_bitset<uint32_t> left;
+
+	int si_si = gameSize * gameSize;
+	left.resize(si_si, false);
+
+	if(board.none())
+	{
+		return left;
+	}
+
+	for(int i = 0; i < board.size(); i++)
+	{
+		int32_t curX = i % gameSize;
+		int32_t curY = i / gameSize;
+
+		int32_t  leftX     = (((curX - 1) % gameSize) + gameSize) % gameSize;
+		uint32_t leftIndex = curY * gameSize + leftX;
+
+		left[leftIndex] = board[i];
+	}
+
+	return left;
+}
+
+boost::dynamic_bitset<uint32_t> LightsOutSolver::MoveRight(const boost::dynamic_bitset<uint32_t>& board, uint16_t gameSize)
+{
+	boost::dynamic_bitset<uint32_t> right;
+
+	int si_si = gameSize * gameSize;
+	right.resize(si_si, false);
+
+	if (board.none())
+	{
+		return right;
+	}
+
+	for (int i = 0; i < board.size(); i++)
+	{
+		int32_t curX = i % gameSize;
+		int32_t curY = i / gameSize;
+
+		int32_t  rightX = (((curX + 1) % gameSize) + gameSize) % gameSize;
+		uint32_t rightIndex = curY * gameSize + rightX;
+
+		right[rightIndex] = board[i];
+	}
+
+	return right;
+}
+
+boost::dynamic_bitset<uint32_t> LightsOutSolver::MoveUp(const boost::dynamic_bitset<uint32_t>& board, uint16_t gameSize)
+{
+	boost::dynamic_bitset<uint32_t> up;
+
+	int si_si = gameSize * gameSize;
+	up.resize(si_si, false);
+
+	if (board.none())
+	{
+		return up;
+	}
+
+	for (int i = 0; i < board.size(); i++)
+	{
+		int32_t curX = i % gameSize;
+		int32_t curY = i / gameSize;
+
+		int32_t  upY = (((curY - 1) % gameSize) + gameSize) % gameSize;
+		uint32_t upIndex = upY * gameSize + curX;
+
+		up[upIndex] = board[i];
+	}
+
+	return up;
+}
+
+boost::dynamic_bitset<uint32_t> LightsOutSolver::MoveDown(const boost::dynamic_bitset<uint32_t>& board, uint16_t gameSize)
+{
+	boost::dynamic_bitset<uint32_t> down;
+
+	int si_si = gameSize * gameSize;
+	down.resize(si_si, false);
+
+	if (board.none())
+	{
+		return down;
+	}
+
+	for (int i = 0; i < board.size(); i++)
+	{
+		int32_t curX = i % gameSize;
+		int32_t curY = i / gameSize;
+
+		int32_t  downY     = (((curY + 1) % gameSize) + gameSize) % gameSize;
+		uint32_t downIndex = downY * gameSize + curX;
+
+		down[downIndex] = board[i];
+	}
+
+	return down;
 }
 
