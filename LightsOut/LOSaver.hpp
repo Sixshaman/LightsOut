@@ -5,7 +5,7 @@
 #include "LightsOutSolver.hpp"
 
 /*
-* The saver class for Lights Out game fields.
+* The saver class for Lights Out game boards.
 *
 */
 

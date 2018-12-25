@@ -15,8 +15,8 @@ LightsOutRenderer::~LightsOutRenderer()
 {
 	DrawScreenShaders::DestroyAll();
 	DrawScreenVariables::DestroyAll();
-	ComputeFieldShaders::DestroyAll();
-	ComputeFieldVariables::DestroyAll();
+	ComputeBoardShaders::DestroyAll();
+	ComputeBoardVariables::DestroyAll();
 	RenderStates::DestroyAll();
 	LOTextures::DestroyAll();
 }
@@ -77,7 +77,7 @@ bool LightsOutRenderer::InitD3D(HWND hwnd)
 		return false;
 	}
 
-	if (!ComputeFieldShaders::InitAll(md3dDevice.Get()))
+	if (!ComputeBoardShaders::InitAll(md3dDevice.Get()))
 	{
 		return false;
 	}
@@ -87,7 +87,7 @@ bool LightsOutRenderer::InitD3D(HWND hwnd)
 		return false;
 	}
 
-	if (!ComputeFieldVariables::InitAll(md3dDevice.Get()))
+	if (!ComputeBoardVariables::InitAll(md3dDevice.Get()))
 	{
 		return false;
 	}
@@ -108,23 +108,23 @@ bool LightsOutRenderer::InitD3D(HWND hwnd)
 	return true;
 }
 
-void LightsOutRenderer::ResetFieldSize(uint16_t newSize)
+void LightsOutRenderer::ResetBoardSize(uint16_t newSize)
 {
 	uint32_t cellSize = (uint32_t)(ceilf(EXPECTED_WND_SIZE / newSize) - 1);
-	ComputeFieldVariables::SetCellSize(cellSize);
+	ComputeBoardVariables::SetCellSize(cellSize);
 
-	ComputeFieldVariables::SetFieldSize(newSize);
-	LOTextures::ResizeField(newSize, cellSize, md3dDevice.Get());
+	ComputeBoardVariables::SetBoardSize(newSize);
+	LOTextures::ResizeBoard(newSize, cellSize, md3dDevice.Get());
 }
 
 void LightsOutRenderer::SetSolutionVisible(bool visible)
 {
-	ComputeFieldVariables::SetSolutionVisible(visible);
+	ComputeBoardVariables::SetSolutionVisible(visible);
 }
 
 void LightsOutRenderer::SetStabilityVisible(bool visible)
 {
-	ComputeFieldVariables::SetStabilityVisible(visible);
+	ComputeBoardVariables::SetStabilityVisible(visible);
 }
 
 bool LightsOutRenderer::OnWndResize(uint16_t newWidth, uint16_t newHeight)
@@ -192,9 +192,9 @@ void LightsOutRenderer::SetDrawType(DrawType drawType)
 	mDrawType = drawType;
 }
 
-void LightsOutRenderer::SetFieldBufferData(boost::dynamic_bitset<uint32_t> field)
+void LightsOutRenderer::SetBoardBufferData(boost::dynamic_bitset<uint32_t> board)
 {
-	LOTextures::UpdateField(field, md3dContext.Get());
+	LOTextures::UpdateBoard(board, md3dContext.Get());
 }
 
 void LightsOutRenderer::SetSolutionBufferData(boost::dynamic_bitset<uint32_t> solution)
@@ -212,34 +212,34 @@ void LightsOutRenderer::SetColorTheme(ColorTheme colorTheme)
 	switch (colorTheme)
 	{
 	case ColorTheme::RED_EXPLOSION:
-		ComputeFieldVariables::SetColorSolved(DirectX::Colors::Red);
-		ComputeFieldVariables::SetColorEnabled(DirectX::Colors::Crimson);
-		ComputeFieldVariables::SetColorNone(DirectX::Colors::Salmon);
+		ComputeBoardVariables::SetColorSolved(DirectX::Colors::Red);
+		ComputeBoardVariables::SetColorEnabled(DirectX::Colors::Crimson);
+		ComputeBoardVariables::SetColorNone(DirectX::Colors::Salmon);
 		break;
 	case ColorTheme::NEON_XXL:
-		ComputeFieldVariables::SetColorSolved(DirectX::Colors::Blue);
-		ComputeFieldVariables::SetColorEnabled(DirectX::Colors::Lime);
-		ComputeFieldVariables::SetColorNone(DirectX::Colors::Black);
+		ComputeBoardVariables::SetColorSolved(DirectX::Colors::Blue);
+		ComputeBoardVariables::SetColorEnabled(DirectX::Colors::Lime);
+		ComputeBoardVariables::SetColorNone(DirectX::Colors::Black);
 		break;
 	case ColorTheme::CREAMED_STRAWBERRY:
-		ComputeFieldVariables::SetColorSolved(DirectX::Colors::Chocolate);
-		ComputeFieldVariables::SetColorEnabled(DirectX::Colors::HotPink);
-		ComputeFieldVariables::SetColorNone(DirectX::Colors::Bisque);
+		ComputeBoardVariables::SetColorSolved(DirectX::Colors::Chocolate);
+		ComputeBoardVariables::SetColorEnabled(DirectX::Colors::HotPink);
+		ComputeBoardVariables::SetColorNone(DirectX::Colors::Bisque);
 		break;
 	case ColorTheme::HARD_TO_SEE:
-		ComputeFieldVariables::SetColorSolved(DirectX::Colors::MidnightBlue);
-		ComputeFieldVariables::SetColorEnabled(DirectX::Colors::Navy);
-		ComputeFieldVariables::SetColorNone(DirectX::Colors::DarkBlue);
+		ComputeBoardVariables::SetColorSolved(DirectX::Colors::MidnightBlue);
+		ComputeBoardVariables::SetColorEnabled(DirectX::Colors::Navy);
+		ComputeBoardVariables::SetColorNone(DirectX::Colors::DarkBlue);
 		break;
 	case ColorTheme::BLACK_AND_WHITE:
-		ComputeFieldVariables::SetColorSolved(DirectX::Colors::DimGray);
-		ComputeFieldVariables::SetColorEnabled(DirectX::Colors::White);
-		ComputeFieldVariables::SetColorNone(DirectX::Colors::Black);
+		ComputeBoardVariables::SetColorSolved(DirectX::Colors::DimGray);
+		ComputeBoardVariables::SetColorEnabled(DirectX::Colors::White);
+		ComputeBoardVariables::SetColorNone(DirectX::Colors::Black);
 		break;
 	case ColorTheme::PETYA:
-		ComputeFieldVariables::SetColorSolved(DirectX::XMVectorSet(0.639f, 0.694f, 0.745f, 1.0f));
-		ComputeFieldVariables::SetColorEnabled(DirectX::XMVectorSet(0.980f, 0.984f, 0.988f, 1.0f));
-		ComputeFieldVariables::SetColorNone(DirectX::XMVectorSet(0.459f, 0.733f, 0.992f, 1.0f));
+		ComputeBoardVariables::SetColorSolved(DirectX::XMVectorSet(0.639f, 0.694f, 0.745f, 1.0f));
+		ComputeBoardVariables::SetColorEnabled(DirectX::XMVectorSet(0.980f, 0.984f, 0.988f, 1.0f));
+		ComputeBoardVariables::SetColorNone(DirectX::XMVectorSet(0.459f, 0.733f, 0.992f, 1.0f));
 		break;
 	default:
 		break;
@@ -248,53 +248,53 @@ void LightsOutRenderer::SetColorTheme(ColorTheme colorTheme)
 
 void LightsOutRenderer::EdgeColorAsUnlit()
 {
-	ComputeFieldVariables::SetColorBetweenAsNone();
+	ComputeBoardVariables::SetColorBetweenAsNone();
 }
 
 void LightsOutRenderer::EdgeColorAsLit()
 {
-	ComputeFieldVariables::SetColorBetweenAsEnabled();
+	ComputeBoardVariables::SetColorBetweenAsEnabled();
 }
 
 void LightsOutRenderer::EdgeColorAsSolution()
 {
-	ComputeFieldVariables::SetColorBetweenAsSolved();
+	ComputeBoardVariables::SetColorBetweenAsSolved();
 }
 
 void LightsOutRenderer::EdgeColorDimmed()
 {
-	ComputeFieldVariables::SetColorBetweenAsDimmed();
+	ComputeBoardVariables::SetColorBetweenAsDimmed();
 }
 
-void LightsOutRenderer::DrawFieldOnTexture(uint16_t cellSize, uint16_t gameSize)
+void LightsOutRenderer::DrawBoardOnTexture(uint16_t cellSize, uint16_t gameSize)
 {
 	FLOAT clearColor[4] = {0.0f, 0.0f, 0.0f, 1.0f};
 
 	md3dContext->ClearUnorderedAccessViewFloat(LOTextures::ResultUAV(), clearColor);
 
 	//--------------------------------------------------------------------------------------------------------------------------
-	//----------------------------------------------Draw the field on the off-screen texture------------------------------------
+	//----------------------------------------------Draw the board on the off-screen texture------------------------------------
 	//--------------------------------------------------------------------------------------------------------------------------
 
-	ComputeFieldVariables::UpdateCSCBuffer(md3dContext.Get());
-	ComputeFieldVariables::SetCSVariables(md3dContext.Get());
+	ComputeBoardVariables::UpdateCSCBuffer(md3dContext.Get());
+	ComputeBoardVariables::SetCSVariables(md3dContext.Get());
 
 	switch (mDrawType)
 	{
 	case DrawType::DRAW_SQUARES:
-		ComputeFieldShaders::SetComputeFieldShader(md3dContext.Get());
+		ComputeBoardShaders::SetComputeBoardShader(md3dContext.Get());
 		break;
 	case DrawType::DRAW_CIRCLES:
-		ComputeFieldShaders::SetComputeFieldCirclesShader(md3dContext.Get());
+		ComputeBoardShaders::SetComputeBoardCirclesShader(md3dContext.Get());
 		break;
 	case DrawType::DRAW_RAINDROPS:
-		ComputeFieldShaders::SetComputeFieldRaindropsShader(md3dContext.Get());
+		ComputeBoardShaders::SetComputeBoardRaindropsShader(md3dContext.Get());
 		break;
 	case DrawType::DRAW_CHAINS:
-		ComputeFieldShaders::SetComputeFieldChainsShader(md3dContext.Get());
+		ComputeBoardShaders::SetComputeBoardChainsShader(md3dContext.Get());
 		break;
 	default:
-		ComputeFieldShaders::SetComputeFieldShader(md3dContext.Get());
+		ComputeBoardShaders::SetComputeBoardShader(md3dContext.Get());
 		break;
 	}
 
@@ -302,11 +302,11 @@ void LightsOutRenderer::DrawFieldOnTexture(uint16_t cellSize, uint16_t gameSize)
 		                  (uint32_t)ceilf(gameSize * (cellSize / 16.0f)),
 		                  1);
 
-	ComputeFieldVariables::DisableVariables(md3dContext.Get());
+	ComputeBoardVariables::DisableVariables(md3dContext.Get());
 	ShaderBinder::UnbindComputeShader(md3dContext.Get());
 }
 
-void LightsOutRenderer::DrawFieldTexOnScreen()
+void LightsOutRenderer::DrawBoardTexOnScreen()
 {
 	FLOAT clearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
@@ -329,22 +329,22 @@ void LightsOutRenderer::DrawFieldTexOnScreen()
 	ShaderBinder::UnbindPipelineShaders(md3dContext.Get());
 }
 
-void LightsOutRenderer::DrawField(uint16_t cellSize, uint16_t gameSize)
+void LightsOutRenderer::DrawBoard(uint16_t cellSize, uint16_t gameSize)
 {
-	DrawFieldOnTexture(cellSize, gameSize);
-	DrawFieldTexOnScreen();
+	DrawBoardOnTexture(cellSize, gameSize);
+	DrawBoardTexOnScreen();
 
 	mSwapChain->Present(0, 0);
 }
 
-void LightsOutRenderer::DrawBgFieldToMemory(uint16_t cellSize, uint16_t gameSize, std::vector<uint32_t>& outData, uint32_t& outRowPitch)
+void LightsOutRenderer::DrawBgBoardToMemory(uint16_t cellSize, uint16_t gameSize, std::vector<uint32_t>& outData, uint32_t& outRowPitch)
 {
 	outData.clear();
 
-	ComputeFieldVariables::SetCellSize(cellSize);
+	ComputeBoardVariables::SetCellSize(cellSize);
 
-	LOTextures::ResizeField(gameSize, cellSize, md3dDevice.Get());
-	DrawFieldOnTexture(cellSize, gameSize);
+	LOTextures::ResizeBoard(gameSize, cellSize, md3dDevice.Get());
+	DrawBoardOnTexture(cellSize, gameSize);
 
 	ID3D11Texture2D* resultTex = LOTextures::MappedTex(md3dContext.Get());
 

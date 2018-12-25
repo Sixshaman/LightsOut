@@ -3,14 +3,15 @@
 #include <WindowsX.h>
 #include "LOSaver.hpp"
 #include "FileDialog.hpp"
+#include "LightsOutBoardGen.hpp"
 
 #define IS_RANDOM_SOLVING       0x01 //Call LightsOutSolver::GetRandomTurn() instead of LightsOutSolver::GetFirstTurn()
 #define SHOW_SOLUTION           0x02 //Show the whole solution with special color
 #define SHOW_STABILITY          0x04 //Show the cell stability data
-#define IS_PERIOD_COUNTING      0x08 //Replace the field with the solution each tick
-#define IS_EIGVEC_COUNTING      0x10 //Replace the field with the special buffer each tick. After enough ticks you get the eigenvector of the field
-#define IS_PERIO4_COUNTING      0x20 //Replace the field with the solution of the solution of the solution of the solution each tick
-#define IS_PERIOD_BACK_COUNTING 0x40 //Replace the field with the anti-solution each tick
+#define IS_PERIOD_COUNTING      0x08 //Replace the board with the solution each tick
+#define IS_EIGVEC_COUNTING      0x10 //Replace the board with the special buffer each tick. After enough ticks you get the eigenvector of the board
+#define IS_PERIO4_COUNTING      0x20 //Replace the board with the solution of the solution of the solution of the solution each tick
+#define IS_PERIOD_BACK_COUNTING 0x40 //Replace the board with the anti-solution each tick
 
 #define MENU_THEME_RED_EXPLOSION	  1001
 #define MENU_THEME_NEON_XXL			  1002
@@ -37,15 +38,18 @@
 #define MENU_FILE_SAVE_STATE_05X	  3004
 #define MENU_FILE_SAVE_STATE_01X	  3005
 
+#define HOTKEY_ID_CLICKMODE_REGULAR 1001
+#define HOTKEY_ID_CLICKMODE_TOROID  1002
+
 namespace
 {
 	LightsOutApp *gApp = nullptr;
 };
 
 LightsOutApp::LightsOutApp(HINSTANCE hInstance): mAppInst(hInstance), mMainWnd(nullptr), mFlags(0), mWndWidth(0), 
-												 mWndHeight(0), mSolver(), mPeriodCount(0), mCurrentTurn(-1, -1)
+												 mWndHeight(0), mSolver(), mPeriodCount(0), mEigenvecTurn(-1, -1)
 {
-	mCellSize = (uint32_t)(ceilf(EXPECTED_WND_SIZE / mGame.getSize()) - 1);
+	mCellSize = (uint32_t)(ceilf(EXPECTED_WND_SIZE / mGame.GetSize()) - 1);
 
 	gApp = this;
 }
@@ -63,6 +67,11 @@ bool LightsOutApp::InitAll()
 	}
 
 	if(!InitMenu())
+	{
+		return false;
+	}
+
+	if(!InitHotkeys())
 	{
 		return false;
 	}
@@ -99,7 +108,7 @@ bool LightsOutApp::InitWnd()
 	}
 
 	DWORD wndStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
-	uint32_t wndSize = mGame.getSize() * mCellSize + 1;
+	uint32_t wndSize = mGame.GetSize() * mCellSize + 1;
 
 	RECT R = {0, 0, (LONG)wndSize, (LONG)wndSize};
 	AdjustWindowRect(&R, wndStyle, TRUE);
@@ -125,18 +134,19 @@ bool LightsOutApp::InitMenu()
 {
 	mMainMenu = CreateMenu();
 
-	HMENU MenuTheme = CreatePopupMenu();
-	HMENU MenuView = CreatePopupMenu();
-	HMENU MenuFile = CreatePopupMenu();
+	HMENU MenuTheme     = CreatePopupMenu();
+	HMENU MenuView      = CreatePopupMenu();
+	HMENU MenuClickRule = CreatePopupMenu();
+	HMENU MenuFile      = CreatePopupMenu();
 
-	if(!mMainMenu || !MenuTheme || !MenuFile)
+	if(!mMainMenu || !MenuTheme || !MenuView || !MenuClickRule || !MenuFile)
 	{
 		return false;
 	}
 
-	AppendMenu(mMainMenu, MF_POPUP | MF_STRING, (uint32_t)MenuTheme, L"&Theme");
-	AppendMenu(mMainMenu, MF_POPUP | MF_STRING, (uint32_t)MenuView,  L"&View");
-	AppendMenu(mMainMenu, MF_POPUP | MF_STRING, (uint32_t)MenuFile,  L"&File");
+	AppendMenu(mMainMenu, MF_POPUP | MF_STRING, (uint32_t)MenuTheme,     L"&Theme");
+	AppendMenu(mMainMenu, MF_POPUP | MF_STRING, (uint32_t)MenuView,      L"&View");
+	AppendMenu(mMainMenu, MF_POPUP | MF_STRING, (uint32_t)MenuFile,      L"&File");
 
 	AppendMenu(MenuTheme, MF_STRING, MENU_THEME_RED_EXPLOSION,		L"Red explosion");
 	AppendMenu(MenuTheme, MF_STRING, MENU_THEME_NEON_XXL,			L"Neon XXL");
@@ -170,6 +180,16 @@ bool LightsOutApp::InitMenu()
 	return true;
 }
 
+bool LightsOutApp::InitHotkeys()
+{
+	bool result = true;
+
+	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_CLICKMODE_REGULAR, MOD_CONTROL, 'R');
+	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_CLICKMODE_TOROID,  MOD_CONTROL, 'T');
+
+	return result;
+}
+
 int LightsOutApp::RunApp()
 {
 	MSG msg = {0};
@@ -184,7 +204,7 @@ int LightsOutApp::RunApp()
 		else
 		{
 			Update();
-			mRenderer.DrawField(mCellSize, mGame.getSize());
+			mRenderer.DrawBoard(mCellSize, mGame.GetSize());
 		}
 	}
 
@@ -271,27 +291,27 @@ void LightsOutApp::OnMenuItem(WPARAM State)
 	}
 	case MENU_FILE_SAVE_STATE:
 	{
-		SaveField(EXPECTED_WND_SIZE);
+		SaveBoard(EXPECTED_WND_SIZE);
 		break;
 	}
 	case MENU_FILE_SAVE_STATE_4X:
 	{
-		SaveField(EXPECTED_WND_SIZE * 2);
+		SaveBoard(EXPECTED_WND_SIZE * 2);
 		break;
 	}
 	case MENU_FILE_SAVE_STATE_16X:
 	{
-		SaveField(EXPECTED_WND_SIZE * 4);
+		SaveBoard(EXPECTED_WND_SIZE * 4);
 		break;
 	}
 	case MENU_FILE_SAVE_STATE_05X:
 	{
-		SaveField(EXPECTED_WND_SIZE / 2);
+		SaveBoard(EXPECTED_WND_SIZE / 2);
 		break;
 	}
 	case MENU_FILE_SAVE_STATE_01X:
 	{
-		SaveField(EXPECTED_WND_SIZE / 10);
+		SaveBoard(EXPECTED_WND_SIZE / 10);
 		break;
 	}
 	}
@@ -299,68 +319,68 @@ void LightsOutApp::OnMenuItem(WPARAM State)
 
 void LightsOutApp::Update()
 {
-	//If we are allowed to take turns from turns pool, do it
-	if(mSolver.GetsolvingFlag())
+	//If we can take turns from the turns pool, do it
+	if(mTurnList.TurnsLeft())
 	{
 		if(mFlags & IS_RANDOM_SOLVING)
 		{
-			PointOnField turn = mSolver.GetRandomTurn();
-			mGame.Click(turn.field_X, turn.field_Y);
+			PointOnBoard turn = mTurnList.GetRandomTurn();
+			mGame.Click(turn.boardX, turn.boardY);
 		}
 		else
 		{
-			PointOnField turn = mSolver.GetFirstTurn();
-			mGame.Click(turn.field_X, turn.field_Y);
+			PointOnBoard turn = mTurnList.GetFirstTurn();
+			mGame.Click(turn.boardX, turn.boardY);
 		}
 
-		mRenderer.SetFieldBufferData(mGame.getField());
+		mRenderer.SetBoardBufferData(mGame.GetBoard());
 	}
 
 	if((mFlags & IS_PERIOD_COUNTING) == 0 && (mFlags & IS_PERIOD_BACK_COUNTING) == 0 && mPeriodCount != 0) //Special state: no period flag is set, but period isn't zero. That means we've counted the period in the previous tick and now we should clean everything
 	{
-		mCountedField.clear();
+		mCountedBoard.clear();
 		MessageBox(nullptr, (L"Solution period is " + std::to_wstring(mPeriodCount)).c_str(), L"Soluion period", MB_OK);
 
 		mPeriodCount = 0;
 	}
 
-	//Soiution period is being counted, redraw the field with the derived field.
-	//Stop if we reached the first field.
+	//Soiution period is being counted, redraw the board with the derived board.
+	//Stop if we reached the first board.
 	if(mFlags & IS_PERIOD_COUNTING)
 	{
 		mPeriodCount++;
 
-		boost::dynamic_bitset<uint32_t> solution = mSolver.GetSolution(mGame);
-		mGame.ResetField(mGame.getSize(), RESET_RESOLVENT, &solution);
+		boost::dynamic_bitset<uint32_t> solution = mSolver.GetSolution(mGame.GetBoard(), mGame.GetSize(), mGame.GetClickRule());
+		mGame.Reset(mGame.GetSize(), solution, RESET_FLAG_LEAVE_STABILITY);
 
-		mRenderer.SetFieldBufferData(mGame.getField());
+		mRenderer.SetBoardBufferData(mGame.GetBoard());
 		if (mFlags & SHOW_STABILITY)
 		{
-			mRenderer.SetStabilityBufferData(mGame.getStability());
+			mRenderer.SetStabilityBufferData(mGame.GetStability());
 		}
 
-		if (mCountedField == solution)
+		if (mCountedBoard == solution)
 		{
 			mFlags &= ~IS_PERIOD_COUNTING; //Next tick we'll show the messagebox
 		}
 	}
 
-	//Soiution period is being counted backwards, redraw the field with the derived field.
-	//Stop if we reached the first field.
+	//Soiution period is being counted backwards, redraw the board with the derived board.
+	//Stop if we reached the first board.
 	if(mFlags & IS_PERIOD_BACK_COUNTING)
 	{
 		mPeriodCount++;
 
-		boost::dynamic_bitset<uint32_t> invsolution = mSolver.GetInverseSolution(mGame);
-		mGame.ResetField(mGame.getSize(), RESET_RESOLVENT, &invsolution);
+		boost::dynamic_bitset<uint32_t> invsolution = mSolver.GetInverseSolution(mGame.GetBoard(), mGame.GetSize(), mGame.GetClickRule());
+		mGame.Reset(mGame.GetSize(), invsolution, RESET_FLAG_LEAVE_STABILITY);
 
-		mRenderer.SetFieldBufferData(mGame.getField());
+		mRenderer.SetBoardBufferData(mGame.GetBoard());
 		if (mFlags & SHOW_STABILITY)
 		{
-			mRenderer.SetStabilityBufferData(mGame.getStability());
+			mRenderer.SetStabilityBufferData(mGame.GetStability());
 		}
 
-		if (mCountedField == invsolution)
+		if (mCountedBoard == invsolution)
 		{
 			mFlags &= ~IS_PERIOD_BACK_COUNTING; //Next tick we'll show the messagebox
 		}
@@ -368,60 +388,56 @@ void LightsOutApp::Update()
 
 	if (mFlags & IS_PERIO4_COUNTING)
 	{
-		boost::dynamic_bitset<uint32_t> solution = mSolver.GetSolution(mGame);
-		mGame.ResetField(mGame.getSize(), RESET_RESOLVENT, &solution);
+		boost::dynamic_bitset<uint32_t> solution = mGame.GetBoard();
+		
+		solution = mSolver.GetSolution(solution, mGame.GetSize(), mGame.GetClickRule());
+		solution = mSolver.GetSolution(solution, mGame.GetSize(), mGame.GetClickRule());
+		solution = mSolver.GetSolution(solution, mGame.GetSize(), mGame.GetClickRule());
+		solution = mSolver.GetSolution(solution, mGame.GetSize(), mGame.GetClickRule());
 
-		solution = mSolver.GetSolution(mGame);
-		mGame.ResetField(mGame.getSize(), RESET_RESOLVENT, &solution);
-
-		solution = mSolver.GetSolution(mGame);
-		mGame.ResetField(mGame.getSize(), RESET_RESOLVENT, &solution);
-
-		solution = mSolver.GetSolution(mGame);
-		mGame.ResetField(mGame.getSize(), RESET_RESOLVENT, &solution);
-
-		mRenderer.SetFieldBufferData(mGame.getField());
+		mGame.Reset(mGame.GetSize(), solution, RESET_FLAG_LEAVE_STABILITY);
+		mRenderer.SetBoardBufferData(solution);
 	}
 
 	if(mFlags & IS_EIGVEC_COUNTING)
 	{
-		mGame.Click(mCurrentTurn.field_X, mCurrentTurn.field_Y);
+		mGame.Click(mEigenvecTurn.boardX, mEigenvecTurn.boardY);
 
-		boost::dynamic_bitset<uint32_t> resolvent = mSolver.GetSolution(mGame);
-		if(mGame.getField() == resolvent)
+		boost::dynamic_bitset<uint32_t> solution = mSolver.GetSolution(mGame.GetBoard(), mGame.GetSize(), mGame.GetClickRule());
+		if(mGame.GetBoard() == solution)
 		{
 			mFlags &= ~IS_EIGVEC_COUNTING;
 		}
 
-		mGame.ResetField(mGame.getSize(), RESET_RESOLVENT, &resolvent);
-		mRenderer.SetFieldBufferData(mGame.getField());
+		mGame.Reset(mGame.GetSize(), solution, RESET_FLAG_LEAVE_STABILITY);
+		mRenderer.SetBoardBufferData(mGame.GetBoard());
 	}
 }
 
-void LightsOutApp::SaveField(uint32_t expectedSize)
+void LightsOutApp::SaveBoard(uint32_t expectedSize)
 {
-	uint32_t cellSize = (uint32_t)(ceilf(expectedSize / mGame.getSize()) - 1);
+	uint32_t cellSize = (uint32_t)(ceilf(expectedSize / mGame.GetSize()) - 1);
 
-	std::vector<uint32_t> fieldData;
-	uint32_t fieldTexRowPitch;
-	mRenderer.DrawBgFieldToMemory(cellSize, mGame.getSize(), fieldData, fieldTexRowPitch);
+	std::vector<uint32_t> boardData;
+	uint32_t boardTexRowPitch;
+	mRenderer.DrawBgBoardToMemory(cellSize, mGame.GetSize(), boardData, boardTexRowPitch);
 
 	std::wstring filePath;
 	FileDialog::GetPictureToSave(mMainWnd, filePath);
 
-	uint32_t texSize = mGame.getSize() * cellSize + 1;
+	uint32_t texSize = mGame.GetSize() * cellSize + 1;
 
-	LightsOutSaver::SaveBMP(filePath, &fieldData[0], texSize, texSize, fieldTexRowPitch);
+	LightsOutSaver::SaveBMP(filePath, &boardData[0], texSize, texSize, boardTexRowPitch);
 
-	mRenderer.ResetFieldSize(mGame.getSize());
+	mRenderer.ResetBoardSize(mGame.GetSize());
 }
 
 void LightsOutApp::OnMouseClick(WPARAM btnState, uint32_t xPos, uint32_t yPos)
 {
-	uint32_t wndSize = mGame.getSize() * mCellSize + 1;
+	uint32_t wndSize = mGame.GetSize() * mCellSize + 1;
 
-	int stepX = (wndSize+1) / mGame.getSize();
-	int stepY = (wndSize+1) / mGame.getSize();
+	int stepX = (wndSize+1) / mGame.GetSize();
+	int stepY = (wndSize+1) / mGame.GetSize();
 
 	unsigned short modX = (unsigned short)(xPos / stepX);
 	unsigned short modY = (unsigned short)(yPos / stepY);
@@ -439,7 +455,7 @@ void LightsOutApp::OnMouseClick(WPARAM btnState, uint32_t xPos, uint32_t yPos)
 		else
 		{
 			mFlags |= IS_EIGVEC_COUNTING;
-			mCurrentTurn = PointOnField(modX, modY);
+			mEigenvecTurn = PointOnBoard(modX, modY);
 		}
 	}
 	else
@@ -447,12 +463,17 @@ void LightsOutApp::OnMouseClick(WPARAM btnState, uint32_t xPos, uint32_t yPos)
 		mGame.Click(modX, modY);
 	}
 
-	mRenderer.SetFieldBufferData(mGame.getField());
+	mRenderer.SetBoardBufferData(mGame.GetBoard());
 
 	if(mFlags & SHOW_SOLUTION)
 	{
-		mSolution = mSolver.GetSolution(mGame);
+		mSolution = mSolver.GetSolution(mGame.GetBoard(), mGame.GetSize(), mGame.GetClickRule());
 		mRenderer.SetSolutionBufferData(mSolution);
+	}
+
+	if(mFlags & SHOW_STABILITY)
+	{
+		mRenderer.SetStabilityBufferData(mGame.GetStability());
 	}
 }
 
@@ -463,13 +484,18 @@ void LightsOutApp::ChangeGameSize(unsigned short newSize)
 	mFlags &= ~IS_PERIO4_COUNTING;
 	mFlags &= ~IS_EIGVEC_COUNTING;
 	mPeriodCount = 0;
-	mCurrentTurn = PointOnField(-1, -1);
-	mCountedField.clear();
+	mEigenvecTurn = PointOnBoard(-1, -1);
+	mCountedBoard.clear();
 
 	Clamp(newSize, (unsigned short)MINIMUM_FIELD_SIZE, (unsigned short)MAXIMUM_FIELD_SIZE);
-	mGame.ResetField(newSize);
 	
-	mRenderer.ResetFieldSize(newSize);
+	LightsOutBoardGen boardGen;
+	auto newBoard = boardGen.Generate(newSize, RESET_FULL_RANDOM);
+	newBoard = mSolver.GetInverseSolution(newBoard, newSize, mGame.GetClickRule());
+
+	mGame.Reset(newSize, newBoard, 0);
+	
+	mRenderer.ResetBoardSize(newSize);
 
 	wchar_t title[50];
 	swprintf_s(title, L"Lights out %dx%d", newSize, newSize);
@@ -493,23 +519,23 @@ void LightsOutApp::ChangeGameSize(unsigned short newSize)
 	SetWindowPos(mMainWnd, HWND_NOTOPMOST, WindowPosX, WindowPosY, mWndWidth, mWndHeight, 0);
 	mRenderer.OnWndResize(mWndWidth, mWndHeight);
 
-	mRenderer.SetFieldBufferData(mGame.getField());
+	mRenderer.SetBoardBufferData(mGame.GetBoard());
 }
 
-void LightsOutApp::ResetField(WPARAM key)
+void LightsOutApp::ResetBoard(WPARAM key)
 {
 	switch(key)
 	{
 	case VK_OEM_PLUS:
 	{
 		mFlags &= ~SHOW_STABILITY;
-		ChangeGameSize(mGame.getSize() + 1);
+		ChangeGameSize(mGame.GetSize() + 1);
 		break;
 	}
 	case VK_OEM_MINUS:
 	{
 		mFlags &= ~SHOW_STABILITY;
-		ChangeGameSize(mGame.getSize() - 1);
+		ChangeGameSize(mGame.GetSize() - 1);
 		break;
 	}
 	case 'S':
@@ -517,7 +543,9 @@ void LightsOutApp::ResetField(WPARAM key)
 		mFlags &= ~SHOW_STABILITY;
 		mFlags &= ~SHOW_SOLUTION;
 		mFlags |= IS_RANDOM_SOLVING;
-		mSolver.SolveGame(mGame);
+
+		auto solution = mSolver.GetSolution(mGame.GetBoard(), mGame.GetSize(), mGame.GetClickRule());
+		mTurnList.Reset(solution, mGame.GetSize());
 		break;
 	}
 	case 'C':
@@ -525,47 +553,66 @@ void LightsOutApp::ResetField(WPARAM key)
 		mFlags &= ~SHOW_STABILITY;
 		mFlags &= ~SHOW_SOLUTION;
 		mFlags &= ~IS_RANDOM_SOLVING;
-		mSolver.SolveGame(mGame);
+
+		auto solution = mSolver.GetSolution(mGame.GetBoard(), mGame.GetSize(), mGame.GetClickRule());
+		mTurnList.Reset(solution, mGame.GetSize());
+
 		break;
 	}
 	case 'R':
 	{
 		mFlags &= ~SHOW_STABILITY;
 		mFlags &= ~SHOW_SOLUTION;
-		mGame.ResetField(mGame.getSize(), RESET_SOLVABLE_RANDOM);
-		mGame.ResetStability();
+
+		LightsOutBoardGen boardGen;
+		auto newBoard = boardGen.Generate(mGame.GetSize(), RESET_FULL_RANDOM);
+		newBoard = mSolver.GetInverseSolution(newBoard, mGame.GetSize(), mGame.GetClickRule());
+		mGame.Reset(mGame.GetSize(), newBoard, 0);
+
 		break;
 	}
 	case 'F':
 	{
 		mFlags &= ~SHOW_STABILITY;
 		mFlags &= ~SHOW_SOLUTION;
-		mGame.ResetField(mGame.getSize(), RESET_FULL_RANDOM);
-		mGame.ResetStability();
+
+		LightsOutBoardGen boardGen;
+		auto newBoard = boardGen.Generate(mGame.GetSize(), RESET_FULL_RANDOM);
+		mGame.Reset(mGame.GetSize(), newBoard, 0);
+
 		break;
 	}
 	case '0':
 	{
 		mFlags &= ~SHOW_STABILITY;
 		mFlags &= ~SHOW_SOLUTION;
-		mGame.ResetField(mGame.getSize(), RESET_ZERO_ELEMENT);
-		mGame.ResetStability();
+
+		LightsOutBoardGen boardGen;
+		auto newBoard = boardGen.Generate(mGame.GetSize(), RESET_ZERO_ELEMENT);
+		mGame.Reset(mGame.GetSize(), newBoard, 0);
+
 		break;
 	}
 	case '1':
 	{
 		mFlags &= ~SHOW_STABILITY;
 		mFlags &= ~SHOW_SOLUTION;
-		mGame.ResetField(mGame.getSize(), RESET_ONE_ELEMENT);
-		mGame.ResetStability();
+
+		LightsOutBoardGen boardGen;
+		auto newBoard = boardGen.Generate(mGame.GetSize(), RESET_ONE_ELEMENT);
+		mGame.Reset(mGame.GetSize(), newBoard, 0);
+
 		break;
 	}
 	case 'B':
 	{
 		mFlags &= ~SHOW_STABILITY;
 		mFlags &= ~SHOW_SOLUTION;
-		mGame.ResetField(mGame.getSize(), RESET_BLATNOY);
-		mGame.ResetStability();
+
+		LightsOutBoardGen boardGen;
+		auto newBoard = boardGen.Generate(mGame.GetSize(), RESET_BLATNOY);
+		mGame.Reset(mGame.GetSize(), newBoard, 0);
+
 		break;
 	}
 	case 'A':
@@ -574,7 +621,7 @@ void LightsOutApp::ResetField(WPARAM key)
 		mFlags ^= SHOW_STABILITY;
 		if (mFlags & SHOW_STABILITY)
 		{
-			auto stability = mGame.getStability();
+			auto stability = mGame.GetStability();
 			mRenderer.SetStabilityBufferData(stability);
 		}
 		break;
@@ -583,31 +630,36 @@ void LightsOutApp::ResetField(WPARAM key)
 	{
 		mFlags &= ~SHOW_STABILITY;
 		mFlags &= ~SHOW_SOLUTION;
-		mGame.ResetField(mGame.getSize(), RESET_PETYA_STYLE);
-		mGame.ResetStability();
+
+		LightsOutBoardGen boardGen;
+		auto newBoard = boardGen.Generate(mGame.GetSize(), RESET_PETYA_STYLE);
+		mGame.Reset(mGame.GetSize(), newBoard, 0);
+
 		break;
 	}
 	case 'O':
 	{
 		mFlags &= ~SHOW_STABILITY;
 		mFlags &= ~SHOW_SOLUTION;
-		mGame.ResetField(mGame.getSize(), RESET_BORDER);
-		mGame.ResetStability();
+
+		LightsOutBoardGen boardGen;
+		auto newBoard = boardGen.Generate(mGame.GetSize(), RESET_BORDER);
+		mGame.Reset(mGame.GetSize(), newBoard, 0);
+
 		break;
 	}
 	case 'E':
 	{
 		if(mFlags & SHOW_SOLUTION)
 		{
-			mGame.ResetField(mGame.getSize(), RESET_RESOLVENT, &mSolution);
-			mRenderer.SetStabilityBufferData(mGame.getStability());
+			mGame.Reset(mGame.GetSize(), mSolution, RESET_FLAG_LEAVE_STABILITY);
+			mRenderer.SetStabilityBufferData(mGame.GetStability());
 			mFlags &= ~SHOW_SOLUTION;
 		}
 		else if (mFlags & SHOW_STABILITY)
 		{
-			mGame.ResetField(mGame.getSize(), RESET_RESOLVENT, &mGame.getStability());
-			mGame.ResetStability();
-			mRenderer.SetStabilityBufferData(mGame.getStability());
+			mGame.Reset(mGame.GetSize(), mGame.GetStability(), 0);
+			mRenderer.SetStabilityBufferData(mGame.GetStability());
 			mFlags &= ~SHOW_STABILITY;
 		}
 
@@ -619,7 +671,7 @@ void LightsOutApp::ResetField(WPARAM key)
 		
 		if(mFlags & SHOW_SOLUTION)
 		{
-			mSolution = mSolver.GetSolution(mGame);
+			mSolution = mSolver.GetSolution(mGame.GetBoard(), mGame.GetSize(), mGame.GetClickRule());
 			mRenderer.SetSolutionBufferData(mSolution);
 		}
 		else
@@ -635,7 +687,7 @@ void LightsOutApp::ResetField(WPARAM key)
 
 		if (mFlags & SHOW_SOLUTION)
 		{
-			mSolution = mSolver.GetInverseSolution(mGame);
+			mSolution = mSolver.GetInverseSolution(mGame.GetBoard(), mGame.GetSize(), mGame.GetClickRule());
 			mRenderer.SetSolutionBufferData(mSolution);
 		}
 		else
@@ -650,9 +702,9 @@ void LightsOutApp::ResetField(WPARAM key)
 		mFlags &= ~SHOW_STABILITY;
 		mFlags &= ~SHOW_SOLUTION;
 
-		boost::dynamic_bitset<uint32_t> invertSolution = ~(mGame.getField());
-		mGame.ResetField(mGame.getSize(), RESET_RESOLVENT, &invertSolution);
-		mGame.ResetStability();
+		boost::dynamic_bitset<uint32_t> inverseBoard = ~(mGame.GetBoard());
+		mGame.Reset(mGame.GetSize(), inverseBoard, 0);
+
 		break;
 	}
 	case 'V':
@@ -663,12 +715,12 @@ void LightsOutApp::ResetField(WPARAM key)
 		if(!(mFlags & IS_PERIOD_COUNTING))
 		{
 			mFlags |= IS_PERIOD_COUNTING;
-			mCountedField = mGame.getField();
+			mCountedBoard = mGame.GetBoard();
 		}
 		else
 		{
 			mFlags &= ~IS_PERIOD_COUNTING;
-			mCountedField.clear();
+			mCountedBoard.clear();
 		}
 		mPeriodCount = 0;
 
@@ -697,12 +749,12 @@ void LightsOutApp::ResetField(WPARAM key)
 		if (!(mFlags & IS_PERIOD_BACK_COUNTING))
 		{
 			mFlags |= IS_PERIOD_BACK_COUNTING;
-			mCountedField = mGame.getField();
+			mCountedBoard = mGame.GetBoard();
 		}
 		else
 		{
 			mFlags &= ~IS_PERIOD_BACK_COUNTING;
-			mCountedField.clear();
+			mCountedBoard.clear();
 		}
 
 		mPeriodCount = 0;
@@ -713,12 +765,31 @@ void LightsOutApp::ResetField(WPARAM key)
 
 	mRenderer.SetSolutionVisible((mFlags & SHOW_SOLUTION) != 0);
 	mRenderer.SetStabilityVisible(((mFlags & SHOW_SOLUTION) == 0) && (mFlags & SHOW_STABILITY) != 0);
-	mRenderer.SetFieldBufferData(mGame.getField());
+	mRenderer.SetBoardBufferData(mGame.GetBoard());
+}
+
+void LightsOutApp::ChangeClickMode(WPARAM hotkey)
+{
+	mFlags &= ~SHOW_SOLUTION;
+	mFlags &= ~SHOW_STABILITY;
+
+	switch (hotkey)
+	{
+	case HOTKEY_ID_CLICKMODE_REGULAR:
+		mGame.SetClickRuleRegular();
+		break;
+	case HOTKEY_ID_CLICKMODE_TOROID:
+		mGame.SetClickRuleToroid();
+		break;
+	default:
+		break;
+	}
 }
 
 LRESULT CALLBACK LightsOutApp::AppProc(HWND hWnd, uint32_t message, WPARAM wParam, LPARAM lParam)
 {
-	static bool MouseHolding = false;
+	static bool MouseHolding  = false;
+	static bool HotkeyHolding = false;
 
 	switch(message)
 	{
@@ -742,7 +813,24 @@ LRESULT CALLBACK LightsOutApp::AppProc(HWND hWnd, uint32_t message, WPARAM wPara
 	}
 	case WM_KEYUP:
 	{
-		ResetField(wParam);
+		if(!HotkeyHolding)
+		{
+			ResetBoard(wParam);
+		}
+
+		if(wParam != VK_CONTROL)
+		{
+			HotkeyHolding = false;
+		}
+		break;
+	}
+	case WM_HOTKEY:
+	{
+		if (!HotkeyHolding)
+		{
+			ChangeClickMode(wParam);
+		}
+		HotkeyHolding = true;
 		break;
 	}
 	}

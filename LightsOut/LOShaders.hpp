@@ -23,37 +23,37 @@ public:
 
 #pragma endregion Help
 
-#pragma region ComputeField
+#pragma region ComputeBoard
 
 /*
-* The class for shader that writing field on off-screen texture
+* The class for shader that writing board on off-screen texture
 *
 */
 
-class ComputeFieldShaders
+class ComputeBoardShaders
 {
 public:
 	static bool InitAll(ID3D11Device *device);
 	static void DestroyAll();
 
-	static void SetComputeFieldShader(ID3D11DeviceContext *dc);
-	static void SetComputeFieldCirclesShader(ID3D11DeviceContext *dc);
-	static void SetComputeFieldRaindropsShader(ID3D11DeviceContext *dc);
-	static void SetComputeFieldChainsShader(ID3D11DeviceContext *dc);
+	static void SetComputeBoardShader(ID3D11DeviceContext *dc);
+	static void SetComputeBoardCirclesShader(ID3D11DeviceContext *dc);
+	static void SetComputeBoardRaindropsShader(ID3D11DeviceContext *dc);
+	static void SetComputeBoardChainsShader(ID3D11DeviceContext *dc);
 
 private:
-	static ID3D11ComputeShader *mComputeFieldShader;
-	static ID3D11ComputeShader *mComputeFieldCirclesShader;
-	static ID3D11ComputeShader *mComputeFieldRaindopsShader;
-	static ID3D11ComputeShader *mComputeFieldChainsShader;
+	static ID3D11ComputeShader *mComputeBoardShader;
+	static ID3D11ComputeShader *mComputeBoardCirclesShader;
+	static ID3D11ComputeShader *mComputeBoardRaindopsShader;
+	static ID3D11ComputeShader *mComputeBoardChainsShader;
 };
 
-#pragma endregion ComputeField
+#pragma endregion ComputeBoard
 
 #pragma region DrawScreen
 
 /*
-* The class for shaders that drawing Lights Out field on screen
+* The class for shaders that drawing Lights Out board on screen
 *
 */
 class DrawScreenShaders 

@@ -16,18 +16,18 @@ inline void UpdateBuffer(ID3D11Buffer *destBuf, CBufType &srcBuf, ID3D11DeviceCo
 	dc->Unmap(destBuf, 0);
 }
 
-#pragma region ComputeField
+#pragma region ComputeBoard
 
-ID3D11Buffer* ComputeFieldVariables::mCSCbuffer = nullptr;
+ID3D11Buffer* ComputeBoardVariables::mCSCbuffer = nullptr;
 
-CS_CBUFFER ComputeFieldVariables::mCSCBufferCopy = {};
+CS_CBUFFER ComputeBoardVariables::mCSCBufferCopy = {};
 
-void ComputeFieldVariables::UpdateCSCBuffer(ID3D11DeviceContext *dc)
+void ComputeBoardVariables::UpdateCSCBuffer(ID3D11DeviceContext *dc)
 {
 	UpdateBuffer(mCSCbuffer, mCSCBufferCopy, dc);
 }
 
-bool ComputeFieldVariables::InitAll(ID3D11Device *device)
+bool ComputeBoardVariables::InitAll(ID3D11Device *device)
 {
 	ZeroMemory(&mCSCBufferCopy, sizeof(CS_CBUFFER));
 
@@ -49,25 +49,25 @@ bool ComputeFieldVariables::InitAll(ID3D11Device *device)
 	return true;
 }
 
-void ComputeFieldVariables::DestroyAll()
+void ComputeBoardVariables::DestroyAll()
 {
 	SafeRelease(mCSCbuffer);
 }
 
-void ComputeFieldVariables::SetCSVariables(ID3D11DeviceContext *dc)
+void ComputeBoardVariables::SetCSVariables(ID3D11DeviceContext *dc)
 {
 	UpdateCSCBuffer(dc);
 
 	dc->CSSetConstantBuffers(0, 1, &mCSCbuffer);
 
-	ID3D11ShaderResourceView *SRVs[3] = {LOTextures::FieldSRV(), LOTextures::SolutionSRV(), LOTextures::StabilitySRV()};
+	ID3D11ShaderResourceView *SRVs[3] = {LOTextures::BoardSRV(), LOTextures::SolutionSRV(), LOTextures::StabilitySRV()};
 	dc->CSSetShaderResources(0, 3, SRVs);
 
 	ID3D11UnorderedAccessView *UAVs[1] = {LOTextures::ResultUAV()};
 	dc->CSSetUnorderedAccessViews(0, 1, UAVs, nullptr);
 }
 
-void ComputeFieldVariables::DisableVariables(ID3D11DeviceContext *dc)
+void ComputeBoardVariables::DisableVariables(ID3D11DeviceContext *dc)
 {
 	ID3D11Buffer* nullcbuffer = {nullptr};
 	dc->CSSetConstantBuffers(0, 1, &nullcbuffer);
@@ -79,62 +79,62 @@ void ComputeFieldVariables::DisableVariables(ID3D11DeviceContext *dc)
 	dc->CSSetUnorderedAccessViews(0, 1, nulluav, nullptr);
 }
 
-void ComputeFieldVariables::SetFieldSize(uint32_t fieldSize)
+void ComputeBoardVariables::SetBoardSize(uint32_t boardSize)
 {
-	mCSCBufferCopy.FieldSize = fieldSize;
+	mCSCBufferCopy.BoardSize = boardSize;
 }
 
-void ComputeFieldVariables::SetCellSize(uint32_t cellSize)
+void ComputeBoardVariables::SetCellSize(uint32_t cellSize)
 {
 	mCSCBufferCopy.CellSize = cellSize;
 }
 
-void ComputeFieldVariables::SetSolutionVisible(bool solveVisible)
+void ComputeBoardVariables::SetSolutionVisible(bool solveVisible)
 {
 	mCSCBufferCopy.SolveVisible = solveVisible;
 }
 
-void ComputeFieldVariables::SetStabilityVisible(bool stabilityVisible)
+void ComputeBoardVariables::SetStabilityVisible(bool stabilityVisible)
 {
 	mCSCBufferCopy.StabilityVisible = stabilityVisible;
 }
 
-void ComputeFieldVariables::SetColorNone(XMVECTOR colorNone)
+void ComputeBoardVariables::SetColorNone(XMVECTOR colorNone)
 {
 	DirectX::XMStoreFloat4(&mCSCBufferCopy.ColorNone, colorNone);
 }
 
-void ComputeFieldVariables::SetColorEnabled(XMVECTOR colorEnabled)
+void ComputeBoardVariables::SetColorEnabled(XMVECTOR colorEnabled)
 {
 	DirectX::XMStoreFloat4(&mCSCBufferCopy.ColorEnabled,colorEnabled);
 }
 
-void ComputeFieldVariables::SetColorSolved(XMVECTOR colorSolved)
+void ComputeBoardVariables::SetColorSolved(XMVECTOR colorSolved)
 {
 	DirectX::XMStoreFloat4(&mCSCBufferCopy.ColorSolved, colorSolved);
 }
 
-void ComputeFieldVariables::SetColorBetween(XMVECTOR colorBetween)
+void ComputeBoardVariables::SetColorBetween(XMVECTOR colorBetween)
 {
 	DirectX::XMStoreFloat4(&mCSCBufferCopy.ColorBetween, colorBetween);
 }
 
-void ComputeFieldVariables::SetColorBetweenAsNone()
+void ComputeBoardVariables::SetColorBetweenAsNone()
 {
 	mCSCBufferCopy.ColorBetween = mCSCBufferCopy.ColorNone;
 }
 
-void ComputeFieldVariables::SetColorBetweenAsEnabled()
+void ComputeBoardVariables::SetColorBetweenAsEnabled()
 {
 	mCSCBufferCopy.ColorBetween = mCSCBufferCopy.ColorEnabled;
 }
 
-void ComputeFieldVariables::SetColorBetweenAsSolved()
+void ComputeBoardVariables::SetColorBetweenAsSolved()
 {
 	mCSCBufferCopy.ColorBetween = mCSCBufferCopy.ColorSolved;
 }
 
-void ComputeFieldVariables::SetColorBetweenAsDimmed()
+void ComputeBoardVariables::SetColorBetweenAsDimmed()
 {
 	XMVECTOR unlitColor    = DirectX::XMLoadFloat4(&mCSCBufferCopy.ColorNone);
 	XMVECTOR invUnlitColor = DirectX::XMVectorSubtract(DirectX::XMVectorSplatOne(), unlitColor);
@@ -144,7 +144,7 @@ void ComputeFieldVariables::SetColorBetweenAsDimmed()
 	DirectX::XMStoreFloat4(&mCSCBufferCopy.ColorBetween, halfLit);
 }
 
-#pragma endregion ComputeField
+#pragma endregion ComputeBoard
 
 #pragma region DrawScreen
 

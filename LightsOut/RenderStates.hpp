@@ -4,7 +4,7 @@
 #include <d3d11.h>
 
 /*
-* The class for some render states for drawing Lights Out field on screen
+* The class for some render states for drawing Lights Out board on screen
 *
 */
 class RenderStates

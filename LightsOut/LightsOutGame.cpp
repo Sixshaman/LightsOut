@@ -1,123 +1,85 @@
 #include "LightsOutGame.hpp"
 #include "Util.hpp"
-#include <random>
 
-LightsOutGame::LightsOutGame(): mSize(5)
+LightsOutGame::LightsOutGame(): mSize(15)
 {
+	mClickRule.reset(new LightsOutClickRuleRegular());
 }
 
 LightsOutGame::~LightsOutGame()
 {
 }
 
-void LightsOutGame::ResetField(unsigned short size, RESET_MODE mode, boost::dynamic_bitset<uint32_t> *resolvent)
+void LightsOutGame::Reset(uint16_t size, const boost::dynamic_bitset<uint32_t>& board, uint32_t resetFlags)
 {
-	uint32_t si_si = size * size;
-	if(mSize != size)
+	if(resetFlags & RESET_FLAG_LEAVE_STABILITY)
 	{
-		mStability.resize(si_si, true);
+		mStability = mStability & (~(mMainBoard ^ board));
 	}
-
-	if(mode == RESET_RESOLVENT && resolvent)
+	else
 	{
-		mStability = mStability & (~(mMainField ^ *resolvent));
+		ResetStability();
 	}
 
 	mSize = size;
-
-	mMainField.clear();
-	mMainField.resize(si_si);
-	
-	mMainField.reset();
-
-	std::random_device rd;
-	for(unsigned short i = 0; i < si_si; i++)
-	{
-		std::mt19937 gen(rd());
-		std::uniform_int_distribution<> booleanDistrib(0, 1);
-
-		switch(mode)
-		{
-		case RESET_FULL_RANDOM:
-			mMainField.set(i, booleanDistrib(gen) == 1);
-			break;
-		case RESET_SOLVABLE_RANDOM:
-			if(booleanDistrib(gen) == 1)
-			{
-				Click(i / size, i % size);
-			}
-			break;
-		case RESET_ZERO_ELEMENT:
-			mMainField.set(i, false);
-			break;
-		case RESET_ONE_ELEMENT:
-			mMainField.set(i, true);
-			break;
-		case RESET_BLATNOY:
-			if((i / size) % 2 == (i % size) % 2)
-			{
-				mMainField.set(i, 1);
-			}
-			else
-			{
-				mMainField.set(i, 0);
-			}
-			break;
-		case RESET_PETYA_STYLE:
-			if((i / size) % 2)
-			{
-				if(!((i % size) % 2))
-					mMainField.set(i, 1);
-				else
-					mMainField.set(i, 0);
-			}
-			else
-			{
-				mMainField.set(i, 0);
-			}
-			break;
-		case RESET_BORDER:
-			if(i/size == 0 || i/size == (size - 1) || i%size == 0 || i%size == (size - 1))
-			{
-				mMainField.set(i, 1);
-			}
-			else
-			{
-				mMainField.set(i, 0);
-			}
-			break;
-		case RESET_RESOLVENT:
-			if(resolvent)
-			{
-				mMainField = *resolvent;
-			}
-			break;
-		}
-	}
+	mMainBoard = board;
 }
 
 void LightsOutGame::ResetStability()
 {
+	if(mStability.size() != mSize * mSize)
+	{
+		mStability.resize(mSize * mSize, true);
+	}
+
 	mStability.reset();
 	mStability = ~mStability;
 }
 
-void LightsOutGame::Click(unsigned short posX, unsigned short posY)
+void LightsOutGame::Click(uint16_t posX, uint16_t posY)
 {
-	Clamp(posX, (unsigned short)0, (unsigned short)(mSize - 1));
-	Clamp(posY, (unsigned short)0, (unsigned short)(mSize - 1));
+	Clamp(posX, (uint16_t)0, (uint16_t)(mSize - 1));
+	Clamp(posY, (uint16_t)0, (uint16_t)(mSize - 1));
 
-	mMainField[posY*mSize + posX].flip();
-	if(posX > 0)         mMainField[posY*mSize + posX - 1].flip();
-	if(posX < mSize - 1) mMainField[posY*mSize + posX + 1].flip();
-	if(posY > 0)         mMainField[(posY-1)*mSize + posX].flip();
-	if(posY < mSize - 1) mMainField[(posY+1)*mSize + posX].flip();
+	ResetStability();
+	mClickRule->Click(mMainBoard, mSize, posX, posY);
 }
 
-void LightsOutGame::ConstructClick(unsigned short posX, unsigned short posY)
+void LightsOutGame::ConstructClick(uint16_t posX, uint16_t posY)
 {
-	Clamp(posX, (unsigned short)0, (unsigned short)(mSize - 1));
-	Clamp(posY, (unsigned short)0, (unsigned short)(mSize - 1));
+	Clamp(posX, (uint16_t)0, (uint16_t)(mSize - 1));
+	Clamp(posY, (uint16_t)0, (uint16_t)(mSize - 1));
 
-	mMainField[posY*mSize + posX].flip();
+	ResetStability();
+	mMainBoard[posY*mSize + posX].flip();
+}
+
+void LightsOutGame::SetClickRuleRegular()
+{
+	mClickRule.reset(new LightsOutClickRuleRegular());
+}
+
+void LightsOutGame::SetClickRuleToroid()
+{
+	mClickRule.reset(new LightsOutClickRuleToroid());
+}
+
+boost::dynamic_bitset<uint32_t> LightsOutGame::GetBoard()
+{
+	return mMainBoard;
+}
+
+boost::dynamic_bitset<uint32_t> LightsOutGame::GetStability()
+{
+	return mStability;
+}
+
+uint16_t LightsOutGame::GetSize()
+{
+	return mSize;
+}
+
+const LightsOutClickRule* LightsOutGame::GetClickRule() const
+{
+	return mClickRule.get();
 }

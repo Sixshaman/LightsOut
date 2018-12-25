@@ -212,8 +212,11 @@
   <ItemGroup>
     <ClCompile Include="FileDialog.cpp" />
     <ClCompile Include="LightsOut.cpp" />
+    <ClCompile Include="LightsOutBoardGen.cpp" />
+    <ClCompile Include="LightsOutClickRules.cpp" />
     <ClCompile Include="LightsOutGame.cpp" />
     <ClCompile Include="LightsOutSolver.cpp" />
+    <ClCompile Include="LightsOutTurnList.cpp" />
     <ClCompile Include="LORenderer.cpp" />
     <ClCompile Include="LOSaver.cpp" />
     <ClCompile Include="LOShaders.cpp" />
@@ -225,8 +228,11 @@
   <ItemGroup>
     <ClInclude Include="FileDialog.hpp" />
     <ClInclude Include="LightsOut.hpp" />
+    <ClInclude Include="LightsOutBoardGen.hpp" />
+    <ClInclude Include="LightsOutClickRules.hpp" />
     <ClInclude Include="LightsOutGame.hpp" />
     <ClInclude Include="LightsOutSolver.hpp" />
+    <ClInclude Include="LightsOutTurnList.hpp" />
     <ClInclude Include="LORenderer.h" />
     <ClInclude Include="LOSaver.hpp" />
     <ClInclude Include="LOShaders.hpp" />
@@ -236,7 +242,7 @@
     <ClInclude Include="Util.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Shaders\Compute\ComputeField.hlsl">
+    <FxCompile Include="Shaders\Compute\ComputeBoard.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
@@ -253,7 +259,7 @@
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Shaders\Compute\%(Filename).cso</ObjectFileOutput>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='TrueRelease|x64'">$(OutDir)Shaders\Compute\%(Filename).cso</ObjectFileOutput>
     </FxCompile>
-    <FxCompile Include="Shaders\Compute\ComputeFieldChains.hlsl">
+    <FxCompile Include="Shaders\Compute\ComputeBoardChains.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
@@ -270,7 +276,7 @@
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='TrueRelease|x64'">$(OutDir)Shaders\Compute\%(Filename).cso</ObjectFileOutput>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Shaders\Compute\%(Filename).cso</ObjectFileOutput>
     </FxCompile>
-    <FxCompile Include="Shaders\Compute\ComputeFieldCircles.hlsl">
+    <FxCompile Include="Shaders\Compute\ComputeBoardCircles.hlsl">
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">5.0</ShaderModel>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
@@ -290,7 +296,7 @@
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(OutDir)Shaders\Compute\%(Filename).cso</ObjectFileOutput>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Shaders\Compute\%(Filename).cso</ObjectFileOutput>
     </FxCompile>
-    <FxCompile Include="Shaders\Compute\ComputeFieldRaindrops.hlsl">
+    <FxCompile Include="Shaders\Compute\ComputeBoardRaindrops.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>

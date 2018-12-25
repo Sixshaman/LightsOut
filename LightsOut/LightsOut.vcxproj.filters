@@ -57,6 +57,15 @@
     <ClCompile Include="LORenderer.cpp">
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
+    <ClCompile Include="LightsOutBoardGen.cpp">
+      <Filter>Файлы исходного кода</Filter>
+    </ClCompile>
+    <ClCompile Include="LightsOutClickRules.cpp">
+      <Filter>Файлы исходного кода</Filter>
+    </ClCompile>
+    <ClCompile Include="LightsOutTurnList.cpp">
+      <Filter>Файлы исходного кода</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="LightsOut.hpp">
@@ -92,6 +101,15 @@
     <ClInclude Include="LORenderer.h">
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
+    <ClInclude Include="LightsOutBoardGen.hpp">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="LightsOutClickRules.hpp">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="LightsOutTurnList.hpp">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\Render\VertexShader.hlsl">
@@ -100,16 +118,16 @@
     <FxCompile Include="Shaders\Render\PixelShader.hlsl">
       <Filter>Shaders\Render</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\Compute\ComputeFieldCircles.hlsl">
+    <FxCompile Include="Shaders\Compute\ComputeBoard.hlsl">
       <Filter>Shaders\Compute</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\Compute\ComputeField.hlsl">
+    <FxCompile Include="Shaders\Compute\ComputeBoardChains.hlsl">
       <Filter>Shaders\Compute</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\Compute\ComputeFieldRaindrops.hlsl">
+    <FxCompile Include="Shaders\Compute\ComputeBoardCircles.hlsl">
       <Filter>Shaders\Compute</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\Compute\ComputeFieldChains.hlsl">
+    <FxCompile Include="Shaders\Compute\ComputeBoardRaindrops.hlsl">
       <Filter>Shaders\Compute</Filter>
     </FxCompile>
   </ItemGroup>

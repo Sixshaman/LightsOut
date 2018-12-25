@@ -8,11 +8,11 @@
 using DirectX::XMFLOAT4;
 using DirectX::XMVECTOR;
 
-#pragma region ComputeField
+#pragma region ComputeBoard
 
 struct CS_CBUFFER
 {
-	uint32_t FieldSize;
+	uint32_t BoardSize;
 	uint32_t CellSize;
 	uint32_t SolveVisible;
 	uint32_t StabilityVisible;
@@ -24,10 +24,10 @@ struct CS_CBUFFER
 };
 
 /*
-* The class for variables of shader that writing field on off-screen texture
+* The class for variables of shader that writing board on off-screen texture
 *
 */
-class ComputeFieldVariables
+class ComputeBoardVariables
 {
 public:
 	static bool InitAll(ID3D11Device *device);
@@ -36,7 +36,7 @@ public:
 	static void SetCSVariables(ID3D11DeviceContext *dc);
 	static void DisableVariables(ID3D11DeviceContext* dc);
 
-	static void SetFieldSize(uint32_t fieldSize);
+	static void SetBoardSize(uint32_t boardSize);
 	static void SetCellSize(uint32_t cellSize);
 	static void SetSolutionVisible(bool solveVisible);
 	static void SetStabilityVisible(bool stabilityVisible);
@@ -59,12 +59,12 @@ private:
 	static CS_CBUFFER mCSCBufferCopy;
 };
 
-#pragma endregion ComputeField
+#pragma endregion ComputeBoard
 
 #pragma region DrawScreen
 
 /*
-* The class for variables of shaders that drawing Lights Out field on screen
+* The class for variables of shaders that drawing Lights Out board on screen
 *
 */
 class DrawScreenVariables

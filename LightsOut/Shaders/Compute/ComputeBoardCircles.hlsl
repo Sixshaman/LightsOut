@@ -1,6 +1,6 @@
 cbuffer cbParams: register(b0)
 {
-	uint gFieldSize;
+	uint gBoardSize;
 	uint gCellSize;
 	int  gSolutionVisible;
 	int  gStabilityVisible;
@@ -11,27 +11,27 @@ cbuffer cbParams: register(b0)
 	float4 gColorBetween;
 };
 
-Buffer<uint> Field:     register(t0); //Field in compressed uint32_t-format
+Buffer<uint> Board:     register(t0); //Board in compressed uint32_t-format
 Buffer<uint> Solution:  register(t1); //Solution in compressed uint32_t-format
 Buffer<uint> Stability: register(t2); //Stability in compressed uint32_t-format
 
-RWTexture2D<float4> Result: register(u0); //Drawn field
+RWTexture2D<float4> Result: register(u0); //Drawn Board
 
 bool IsCellActivated(uint2 cellNumber)
 {
-	uint cellNumberAll = cellNumber.y * gFieldSize + cellNumber.x; //Number of cell
+	uint cellNumberAll = cellNumber.y * gBoardSize + cellNumber.x; //Number of cell
 
-	uint compressedCellGroupNumber = cellNumberAll / 32; //Element of Field that contains that cell
+	uint compressedCellGroupNumber = cellNumberAll / 32; //Element of Board that contains that cell
 	uint compressedCellNumber      = cellNumberAll % 32; //Number of bit of that cell
 
-	return (Field[compressedCellGroupNumber] >> compressedCellNumber) & 1; //Getting the bit of cell
+	return (Board[compressedCellGroupNumber] >> compressedCellNumber) & 1; //Getting the bit of cell
 }
 
 bool IsCellActivatedSolution(uint2 cellNumber)
 {
-	uint cellNumberAll = cellNumber.y * gFieldSize + cellNumber.x; //Number of cell
+	uint cellNumberAll = cellNumber.y * gBoardSize + cellNumber.x; //Number of cell
 
-	uint compressedCellGroupNumber = cellNumberAll / 32; //Element of Field that contains that cell
+	uint compressedCellGroupNumber = cellNumberAll / 32; //Element of Board that contains that cell
 	uint compressedCellNumber = cellNumberAll % 32; //Number of bit of that cell
 
 	return (Solution[compressedCellGroupNumber] >> compressedCellNumber) & 1; //Getting the bit of cell
@@ -39,9 +39,9 @@ bool IsCellActivatedSolution(uint2 cellNumber)
 
 bool IsCellActivatedStability(uint2 cellNumber)
 {
-	uint cellNumberAll = cellNumber.y * gFieldSize + cellNumber.x; //Number of cell
+	uint cellNumberAll = cellNumber.y * gBoardSize + cellNumber.x; //Number of cell
 
-	uint compressedCellGroupNumber = cellNumberAll / 32; //Element of Field that contains that cell
+	uint compressedCellGroupNumber = cellNumberAll / 32; //Element of Board that contains that cell
 	uint compressedCellNumber      = cellNumberAll % 32; //Number of bit of that cell
 
 	return (Stability[compressedCellGroupNumber] >> compressedCellNumber) & 1; //Getting the bit of cell
@@ -65,9 +65,9 @@ void main(uint3 DTid: SV_DispatchThreadID)
 		bool insideCircle = (dot(cellCoord, cellCoord) < circleRadius * circleRadius);
 
 		bool leftPartColored   = cellNumber.x > 0              && IsCellActivated(cellNumber + int2(-1,  0));
-		bool rightPartColored  = cellNumber.x < gFieldSize - 1 && IsCellActivated(cellNumber + int2( 1,  0));
+		bool rightPartColored  = cellNumber.x < gBoardSize - 1 && IsCellActivated(cellNumber + int2( 1,  0));
 		bool topPartColored    = cellNumber.y > 0              && IsCellActivated(cellNumber + int2( 0, -1));
-		bool bottomPartColored = cellNumber.y < gFieldSize - 1 && IsCellActivated(cellNumber + int2( 0,  1));
+		bool bottomPartColored = cellNumber.y < gBoardSize - 1 && IsCellActivated(cellNumber + int2( 0,  1));
 
 		bool circleEdgeColored = (leftPartColored && cellCoord.x <= 0) || (topPartColored && cellCoord.y <= 0) || (rightPartColored && cellCoord.x >= 0) || (bottomPartColored && cellCoord.y >= 0);
 
@@ -87,9 +87,9 @@ void main(uint3 DTid: SV_DispatchThreadID)
 			bool cellSolved = IsCellActivatedSolution(cellNumber);
 
 			bool leftPartSolved   = cellNumber.x > 0              && IsCellActivatedSolution(cellNumber + int2(-1,  0));
-			bool rightPartSolved  = cellNumber.x < gFieldSize - 1 && IsCellActivatedSolution(cellNumber + int2( 1,  0));
+			bool rightPartSolved  = cellNumber.x < gBoardSize - 1 && IsCellActivatedSolution(cellNumber + int2( 1,  0));
 			bool topPartSolved    = cellNumber.y > 0              && IsCellActivatedSolution(cellNumber + int2( 0, -1));
-			bool bottomPartSolved = cellNumber.y < gFieldSize - 1 && IsCellActivatedSolution(cellNumber + int2( 0,  1));
+			bool bottomPartSolved = cellNumber.y < gBoardSize - 1 && IsCellActivatedSolution(cellNumber + int2( 0,  1));
 
 			bool circleEdgeSolved = (leftPartSolved && cellCoord.x <= 0) || (topPartSolved && cellCoord.y <= 0) || (rightPartSolved && cellCoord.x >= 0) || (bottomPartSolved && cellCoord.y >= 0);
 
@@ -103,9 +103,9 @@ void main(uint3 DTid: SV_DispatchThreadID)
 			bool cellStable = IsCellActivatedStability(cellNumber);
 
 			bool leftPartStable   = cellNumber.x > 0              && IsCellActivatedStability(cellNumber + int2(-1,  0));
-			bool rightPartStable  = cellNumber.x < gFieldSize - 1 && IsCellActivatedStability(cellNumber + int2( 1,  0));
+			bool rightPartStable  = cellNumber.x < gBoardSize - 1 && IsCellActivatedStability(cellNumber + int2( 1,  0));
 			bool topPartStable    = cellNumber.y > 0              && IsCellActivatedStability(cellNumber + int2( 0, -1));
-			bool bottomPartStable = cellNumber.y < gFieldSize - 1 && IsCellActivatedStability(cellNumber + int2( 0,  1));
+			bool bottomPartStable = cellNumber.y < gBoardSize - 1 && IsCellActivatedStability(cellNumber + int2( 0,  1));
 
 			bool circleEdgeStable = (leftPartStable && cellCoord.x <= 0) || (topPartStable && cellCoord.y <= 0) || (rightPartStable && cellCoord.x >= 0) || (bottomPartStable && cellCoord.y >= 0);
 

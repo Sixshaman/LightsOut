@@ -5,6 +5,7 @@
 #include <Windows.h>
 #include "LightsOutGame.hpp"
 #include "LightsOutSolver.hpp"
+#include "LightsOutTurnList.hpp"
 #include "LORenderer.h"
 
 /*
@@ -29,13 +30,15 @@ private:
 
 	bool InitWnd();
 	bool InitMenu();
+	bool InitHotkeys();
 
 	void Update();
 
-	void SaveField(uint32_t expectedSize);
+	void SaveBoard(uint32_t expectedSize);
 
 	void OnMenuItem(WPARAM State);
-	void ResetField(WPARAM key);
+	void ResetBoard(WPARAM key);
+	void ChangeClickMode(WPARAM hotkey);
 
 	void ChangeGameSize(unsigned short newSize);
 
@@ -46,22 +49,23 @@ private:
 
 	LightsOutRenderer mRenderer;
 
-	LightsOutGame mGame;
-	Solver mSolver;
+	LightsOutGame   mGame;
+	LightsOutSolver mSolver;
 
 	uint32_t mCellSize;	//Calculated from game size
 
 	boost::dynamic_bitset<uint32_t> mSolution; //Solution cells
 
 	uint32_t mPeriodCount;
-	boost::dynamic_bitset<uint32_t> mCountedField;
+	boost::dynamic_bitset<uint32_t> mCountedBoard;
 
-	PointOnField mCurrentTurn;
+	PointOnBoard      mEigenvecTurn;
+	LightsOutTurnList mTurnList;
 
 	int mWndWidth;
 	int mWndHeight;
 
-	uint32_t mFlags; //Some flags for showing the field
+	uint32_t mFlags; //Some flags for showing the board
 };
 
 #endif LIGHTS_OUT_HPP

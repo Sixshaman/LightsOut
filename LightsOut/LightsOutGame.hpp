@@ -1,27 +1,18 @@
-#ifndef LIGHTS_OUT_GAME_HPP
-#define LIGHTS_OUT_GAME_HPP
+#ifndef LIGHTS_OUT_GEN_HPP
+#define LIGHTS_OUT_GEN_HPP
 
 #include <boost\dynamic_bitset\dynamic_bitset.hpp>
 #include <vector>
 #include <Windows.h>
-
-enum RESET_MODE
-{
-	RESET_FULL_RANDOM,     //Fully random field(Hotkey - F)
-	RESET_SOLVABLE_RANDOM, //Solvable random field(Hotkey - R)
-	RESET_ZERO_ELEMENT,	   //Fully turned off(Hotkey - 0)
-	RESET_ONE_ELEMENT,	   //Fully turned on(Hotkey - 1)
-	RESET_BLATNOY,		   //Field with chessboard pattern(Hotkey - B)
-	RESET_PETYA_STYLE,	   //Field with checkers pattern(Hotkey - P)
-	RESET_BORDER,		   //Field fith only border enabled(Hotkey - O)
-	RESET_RESOLVENT,	   //Field = given field(Hotkey - E)
-	RESET_INVERSE          //Field = inverted field
-};
+#include <memory>
+#include "LightsOutClickRules.hpp"
 
 /*
 * The Lights Out game class.
 *
 */
+
+#define RESET_FLAG_LEAVE_STABILITY 1
 
 class LightsOutGame
 {
@@ -29,20 +20,29 @@ public:
 	LightsOutGame();
 	~LightsOutGame();
 
-	void Click(unsigned short xPos, unsigned short yPos);
-	void ConstructClick(unsigned short xPos, unsigned short yPos);
+	void Click(uint16_t xPos, uint16_t yPos);
+	void ConstructClick(uint16_t xPos, uint16_t yPos);
 
-	void ResetField(unsigned short size, RESET_MODE mode = RESET_SOLVABLE_RANDOM, boost::dynamic_bitset<uint32_t> *resolvent = nullptr);
-	void ResetStability();
+	void SetClickRuleRegular();
+	void SetClickRuleToroid();
 
-	boost::dynamic_bitset<uint32_t> getField()     const { return mMainField; }
-	boost::dynamic_bitset<uint32_t> getStability() const { return mStability; }
-	unsigned short                  getSize()      const { return mSize; }
+	void Reset(uint16_t size, const boost::dynamic_bitset<uint32_t>& board, uint32_t resetFlags);
+
+	boost::dynamic_bitset<uint32_t> GetBoard();
+	boost::dynamic_bitset<uint32_t> GetStability();
+	uint16_t                        GetSize();
+
+	const LightsOutClickRule* GetClickRule() const;
 
 private:
-	boost::dynamic_bitset<uint32_t> mMainField;
+	void ResetStability();
+
+private:
+	boost::dynamic_bitset<uint32_t> mMainBoard;
 	boost::dynamic_bitset<uint32_t> mStability;
-	unsigned short mSize;
+	uint16_t mSize;
+
+	std::unique_ptr<LightsOutClickRule> mClickRule;
 };
 
 #endif

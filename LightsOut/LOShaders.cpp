@@ -39,14 +39,14 @@ void ShaderBinder::UnbindVertexPixelShaders(ID3D11DeviceContext *dc)
 
 #pragma endregion Help
 
-#pragma region ComputeField
+#pragma region ComputeBoard
 
-ID3D11ComputeShader *ComputeFieldShaders::mComputeFieldShader         = nullptr;
-ID3D11ComputeShader *ComputeFieldShaders::mComputeFieldCirclesShader  = nullptr;
-ID3D11ComputeShader *ComputeFieldShaders::mComputeFieldRaindopsShader = nullptr;
-ID3D11ComputeShader *ComputeFieldShaders::mComputeFieldChainsShader   = nullptr;
+ID3D11ComputeShader *ComputeBoardShaders::mComputeBoardShader         = nullptr;
+ID3D11ComputeShader *ComputeBoardShaders::mComputeBoardCirclesShader  = nullptr;
+ID3D11ComputeShader *ComputeBoardShaders::mComputeBoardRaindopsShader = nullptr;
+ID3D11ComputeShader *ComputeBoardShaders::mComputeBoardChainsShader   = nullptr;
 
-bool ComputeFieldShaders::InitAll(ID3D11Device *device)
+bool ComputeBoardShaders::InitAll(ID3D11Device *device)
 {
 	ID3DBlob *shader;
 
@@ -60,66 +60,66 @@ bool ComputeFieldShaders::InitAll(ID3D11Device *device)
 	ShaderPath = LR"(Shaders\Compute\)";
 #endif
 
-	if(FAILED(D3DReadFileToBlob((ShaderPath + L"ComputeField.cso").c_str(), &shader)))
+	if(FAILED(D3DReadFileToBlob((ShaderPath + L"ComputeBoard.cso").c_str(), &shader)))
 	{
 		MessageBox(NULL, L"Cannot read shader file", L"Error", MB_ICONERROR|MB_OK);
 	}
 
-	ASSERT_ERR(device->CreateComputeShader(shader->GetBufferPointer(), shader->GetBufferSize(), nullptr, &mComputeFieldShader));
+	ASSERT_ERR(device->CreateComputeShader(shader->GetBufferPointer(), shader->GetBufferSize(), nullptr, &mComputeBoardShader));
 
-	if (FAILED(D3DReadFileToBlob((ShaderPath + L"ComputeFieldCircles.cso").c_str(), &shader)))
+	if (FAILED(D3DReadFileToBlob((ShaderPath + L"ComputeBoardCircles.cso").c_str(), &shader)))
 	{
 		MessageBox(NULL, L"Cannot read shader file", L"Error", MB_ICONERROR | MB_OK);
 	}
 
-	ASSERT_ERR(device->CreateComputeShader(shader->GetBufferPointer(), shader->GetBufferSize(), nullptr, &mComputeFieldCirclesShader));
+	ASSERT_ERR(device->CreateComputeShader(shader->GetBufferPointer(), shader->GetBufferSize(), nullptr, &mComputeBoardCirclesShader));
 
-	if (FAILED(D3DReadFileToBlob((ShaderPath + L"ComputeFieldRaindrops.cso").c_str(), &shader)))
+	if (FAILED(D3DReadFileToBlob((ShaderPath + L"ComputeBoardRaindrops.cso").c_str(), &shader)))
 	{
 		MessageBox(NULL, L"Cannot read shader file", L"Error", MB_ICONERROR | MB_OK);
 	}
 
-	ASSERT_ERR(device->CreateComputeShader(shader->GetBufferPointer(), shader->GetBufferSize(), nullptr, &mComputeFieldRaindopsShader));
+	ASSERT_ERR(device->CreateComputeShader(shader->GetBufferPointer(), shader->GetBufferSize(), nullptr, &mComputeBoardRaindopsShader));
 
-	if (FAILED(D3DReadFileToBlob((ShaderPath + L"ComputeFieldChains.cso").c_str(), &shader)))
+	if (FAILED(D3DReadFileToBlob((ShaderPath + L"ComputeBoardChains.cso").c_str(), &shader)))
 	{
 		MessageBox(NULL, L"Cannot read shader file", L"Error", MB_ICONERROR | MB_OK);
 	}
 
-	ASSERT_ERR(device->CreateComputeShader(shader->GetBufferPointer(), shader->GetBufferSize(), nullptr, &mComputeFieldChainsShader));
+	ASSERT_ERR(device->CreateComputeShader(shader->GetBufferPointer(), shader->GetBufferSize(), nullptr, &mComputeBoardChainsShader));
 
 	return true;
 }
 
-void ComputeFieldShaders::DestroyAll()
+void ComputeBoardShaders::DestroyAll()
 {
-	SafeRelease(mComputeFieldShader);
-	SafeRelease(mComputeFieldCirclesShader);
-	SafeRelease(mComputeFieldRaindopsShader);
-	SafeRelease(mComputeFieldChainsShader);
+	SafeRelease(mComputeBoardShader);
+	SafeRelease(mComputeBoardCirclesShader);
+	SafeRelease(mComputeBoardRaindopsShader);
+	SafeRelease(mComputeBoardChainsShader);
 }
 
-void ComputeFieldShaders::SetComputeFieldShader(ID3D11DeviceContext *dc)
+void ComputeBoardShaders::SetComputeBoardShader(ID3D11DeviceContext *dc)
 {
-	dc->CSSetShader(mComputeFieldShader, nullptr, 0);
+	dc->CSSetShader(mComputeBoardShader, nullptr, 0);
 }
 
-void ComputeFieldShaders::SetComputeFieldCirclesShader(ID3D11DeviceContext *dc)
+void ComputeBoardShaders::SetComputeBoardCirclesShader(ID3D11DeviceContext *dc)
 {
-	dc->CSSetShader(mComputeFieldCirclesShader, nullptr, 0);
+	dc->CSSetShader(mComputeBoardCirclesShader, nullptr, 0);
 }
 
-void ComputeFieldShaders::SetComputeFieldRaindropsShader(ID3D11DeviceContext *dc)
+void ComputeBoardShaders::SetComputeBoardRaindropsShader(ID3D11DeviceContext *dc)
 {
-	dc->CSSetShader(mComputeFieldRaindopsShader, nullptr, 0);
+	dc->CSSetShader(mComputeBoardRaindopsShader, nullptr, 0);
 }
 
-void ComputeFieldShaders::SetComputeFieldChainsShader(ID3D11DeviceContext* dc)
+void ComputeBoardShaders::SetComputeBoardChainsShader(ID3D11DeviceContext* dc)
 {
-	dc->CSSetShader(mComputeFieldChainsShader, nullptr, 0);
+	dc->CSSetShader(mComputeBoardChainsShader, nullptr, 0);
 }
 
-#pragma endregion ComputeField
+#pragma endregion ComputeBoard
 
 #pragma region DrawScreen
 
@@ -174,4 +174,4 @@ void DrawScreenShaders::SetPipelineShaders(ID3D11DeviceContext *dc)
 	dc->PSSetShader(mPixelShader, nullptr, 0);
 }
 
-#pragma endregion DrawField
+#pragma endregion DrawBoard

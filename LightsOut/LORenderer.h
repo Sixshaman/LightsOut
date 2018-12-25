@@ -37,18 +37,18 @@ public:
 
 	bool InitD3D(HWND hwnd);
 
-	void ResetFieldSize(uint16_t newSize);
+	void ResetBoardSize(uint16_t newSize);
 	void SetSolutionVisible(bool visible);
 	void SetStabilityVisible(bool visible);
 
-	void DrawField(uint16_t cellSize, uint16_t gameSize);
-	void DrawBgFieldToMemory(uint16_t cellSize, uint16_t gameSize, std::vector<uint32_t>& outData, uint32_t& outRowPitch);
+	void DrawBoard(uint16_t cellSize, uint16_t gameSize);
+	void DrawBgBoardToMemory(uint16_t cellSize, uint16_t gameSize, std::vector<uint32_t>& outData, uint32_t& outRowPitch);
 	
 	bool OnWndResize(uint16_t newWidth, uint16_t newHeight);
 
 	void SetDrawType(DrawType drawType);
 
-	void SetFieldBufferData(boost::dynamic_bitset<uint32_t>);
+	void SetBoardBufferData(boost::dynamic_bitset<uint32_t>);
 	void SetSolutionBufferData(boost::dynamic_bitset<uint32_t>);
 	void SetStabilityBufferData(boost::dynamic_bitset<uint32_t>);
 
@@ -59,8 +59,8 @@ public:
 	void EdgeColorDimmed();
 
 private:
-	void DrawFieldOnTexture(uint16_t cellSize, uint16_t gameSize);
-	void DrawFieldTexOnScreen();
+	void DrawBoardOnTexture(uint16_t cellSize, uint16_t gameSize);
+	void DrawBoardTexOnScreen();
 
 private:
 	Microsoft::WRL::ComPtr<ID3D11Device>         md3dDevice;

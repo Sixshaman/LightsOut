@@ -1,6 +1,6 @@
 cbuffer cbParams: register(b0)
 {
-	uint gFieldSize;
+	uint gBoardSize;
 	uint gCellSize;
 	int  gSolutionVisible;
 	int  gStabilityVisible;
@@ -11,11 +11,11 @@ cbuffer cbParams: register(b0)
 	float4 gColorBetween;
 };
 
-Buffer<uint> Field:     register(t0); //Field in compressed uint32_t-format
+Buffer<uint> Board:     register(t0); //Board in compressed uint32_t-format
 Buffer<uint> Solution:  register(t1); //Solution in compressed uint32_t-format
 Buffer<uint> Stability: register(t2); //Stability in compressed uint32_t-format
 
-RWTexture2D<float4> Result: register(u0); //Drawn field
+RWTexture2D<float4> Result: register(u0); //Drawn Board
 
 [numthreads(16, 16, 1)]
 void main(uint3 DTid: SV_DispatchThreadID)
@@ -27,12 +27,12 @@ void main(uint3 DTid: SV_DispatchThreadID)
 	{
 		uint2 cellNumber = DTid.xy / gCellSize.xx;
 
-		uint cellNumberAll = cellNumber.y * gFieldSize + cellNumber.x; //Number of cell
+		uint cellNumberAll = cellNumber.y * gBoardSize + cellNumber.x; //Number of cell
 
-		uint compressedCellGroupNumber = cellNumberAll / 32; //Element of Field that contains that cell
+		uint compressedCellGroupNumber = cellNumberAll / 32; //Element of Board that contains that cell
 		uint compressedCellNumber      = cellNumberAll % 32; //Number of bit of that cell
 
-		bool cellEnabled = (Field[compressedCellGroupNumber] >> compressedCellNumber) & 1; //Getting the bit of cell
+		bool cellEnabled = (Board[compressedCellGroupNumber] >> compressedCellNumber) & 1; //Getting the bit of cell
 
 		[flatten]
 		if(cellEnabled)
