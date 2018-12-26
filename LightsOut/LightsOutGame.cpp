@@ -64,6 +64,11 @@ void LightsOutGame::SetClickRuleToroid()
 	mClickRule.reset(new LightsOutClickRuleToroid());
 }
 
+void LightsOutGame::SetClickRuleBaked()
+{
+	mClickRule.reset(new LightsOutClickRuleCustom(mMainBoard, mSize));
+}
+
 boost::dynamic_bitset<uint32_t> LightsOutGame::GetBoard()
 {
 	return mMainBoard;

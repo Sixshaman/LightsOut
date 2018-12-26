@@ -61,6 +61,17 @@ void LightsOutSolver::GenerateInverseMatrix(uint16_t size, const LightsOutClickR
 			}
 		}
 	}
+
+	for(int i = 0; i < size_size; i++)
+	{
+		for(int j = 0; j < i; j++)
+		{
+			//std::swap doesn't work here
+			bool temp = mInvSolutionMatrix[i][j];
+			mInvSolutionMatrix[i].set(j, mInvSolutionMatrix[j][i]);
+			mInvSolutionMatrix[j].set(i, temp);
+		}
+	}
 }
 
 boost::dynamic_bitset<uint32_t> LightsOutSolver::GetSolution(const boost::dynamic_bitset<uint32_t>& board, uint16_t gameSize, const LightsOutClickRule* clickRule)

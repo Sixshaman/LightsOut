@@ -13,6 +13,19 @@
 *
 */
 
+enum class WorkingMode
+{
+	LIT_BOARD,
+	CONSTRUCT_CLICKRULE,
+	CONSTRUCT_CLICKRULE_TOROID
+};
+
+enum class SolveMode
+{
+	SOLVE_RANDOM,
+	SOLVE_ORDERED
+};
+
 class LightsOutApp
 {
 public:
@@ -41,6 +54,19 @@ private:
 	void ChangeClickMode(WPARAM hotkey);
 
 	void ChangeGameSize(unsigned short newSize);
+	void ChangeWorkingMode(WorkingMode newMode);
+
+	void IncrementGameSize();
+	void DecrementGameSize();
+
+	void CancelClickRule();
+	void BakeClickRule();
+
+	void SetFlags(uint32_t FlagsMask);
+	void DisableFlags(uint32_t FlagsMask);
+	void ChangeFlags(uint32_t FlagsMask);
+
+	void SolveCurrentBoard(SolveMode solveMode);
 
 private:
 	HINSTANCE mAppInst;
@@ -52,11 +78,12 @@ private:
 	LightsOutGame   mGame;
 	LightsOutSolver mSolver;
 
-	uint32_t mCellSize;	//Calculated from game size
+	uint32_t    mCellSize;    //Calculated from game size
+	WorkingMode mWorkingMode; //Current working mode
 
 	boost::dynamic_bitset<uint32_t> mSolution; //Solution cells
 
-	uint32_t mPeriodCount;
+	uint32_t                        mPeriodCount;
 	boost::dynamic_bitset<uint32_t> mCountedBoard;
 
 	PointOnBoard      mEigenvecTurn;

@@ -40,6 +40,7 @@
 
 #define HOTKEY_ID_CLICKMODE_REGULAR 1001
 #define HOTKEY_ID_CLICKMODE_TOROID  1002
+#define HOTKEY_ID_CLICKMODE_CUSTOM  1003
 
 namespace
 {
@@ -50,6 +51,8 @@ LightsOutApp::LightsOutApp(HINSTANCE hInstance): mAppInst(hInstance), mMainWnd(n
 												 mWndHeight(0), mSolver(), mPeriodCount(0), mEigenvecTurn(-1, -1)
 {
 	mCellSize = (uint32_t)(ceilf(EXPECTED_WND_SIZE / mGame.GetSize()) - 1);
+
+	mWorkingMode = WorkingMode::LIT_BOARD;
 
 	gApp = this;
 }
@@ -186,6 +189,7 @@ bool LightsOutApp::InitHotkeys()
 
 	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_CLICKMODE_REGULAR, MOD_CONTROL, 'R');
 	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_CLICKMODE_TOROID,  MOD_CONTROL, 'T');
+	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_CLICKMODE_CUSTOM,  MOD_CONTROL, 'M');
 
 	return result;
 }
@@ -442,25 +446,32 @@ void LightsOutApp::OnMouseClick(WPARAM btnState, uint32_t xPos, uint32_t yPos)
 	unsigned short modX = (unsigned short)(xPos / stepX);
 	unsigned short modY = (unsigned short)(yPos / stepY);
 
-	if(btnState & MK_CONTROL)
+	if (mWorkingMode == WorkingMode::LIT_BOARD)
 	{
-		mGame.ConstructClick(modX, modY);
-	}
-	else if(btnState & MK_SHIFT)
-	{
-		if(mFlags & IS_EIGVEC_COUNTING)
+		if (btnState & MK_CONTROL)
 		{
-			mFlags &= ~IS_EIGVEC_COUNTING;
+			mGame.ConstructClick(modX, modY);
+		}
+		else if (btnState & MK_SHIFT)
+		{
+			if (mFlags & IS_EIGVEC_COUNTING)
+			{
+				mFlags &= ~IS_EIGVEC_COUNTING;
+			}
+			else
+			{
+				mFlags |= IS_EIGVEC_COUNTING;
+				mEigenvecTurn = PointOnBoard(modX, modY);
+			}
 		}
 		else
 		{
-			mFlags |= IS_EIGVEC_COUNTING;
-			mEigenvecTurn = PointOnBoard(modX, modY);
+			mGame.Click(modX, modY);
 		}
 	}
-	else
+	else if(mWorkingMode == WorkingMode::CONSTRUCT_CLICKRULE)
 	{
-		mGame.Click(modX, modY);
+		mGame.ConstructClick(modX, modY);
 	}
 
 	mRenderer.SetBoardBufferData(mGame.GetBoard());
@@ -489,17 +500,33 @@ void LightsOutApp::ChangeGameSize(unsigned short newSize)
 
 	Clamp(newSize, (unsigned short)MINIMUM_FIELD_SIZE, (unsigned short)MAXIMUM_FIELD_SIZE);
 	
-	LightsOutBoardGen boardGen;
-	auto newBoard = boardGen.Generate(newSize, RESET_FULL_RANDOM);
-	newBoard = mSolver.GetInverseSolution(newBoard, newSize, mGame.GetClickRule());
+	if(mWorkingMode == WorkingMode::LIT_BOARD)
+	{
+		LightsOutBoardGen boardGen;
+		auto newBoard = boardGen.Generate(newSize, RESET_FULL_RANDOM);
+		newBoard = mSolver.GetInverseSolution(newBoard, newSize, mGame.GetClickRule());
 
-	mGame.Reset(newSize, newBoard, 0);
-	
+		mGame.Reset(newSize, newBoard, 0);
+
+		wchar_t title[50];
+		swprintf_s(title, L"Lights out %dx%d", newSize, newSize);
+		SetWindowText(mMainWnd, title);
+	}
+	else
+	{
+		boost::dynamic_bitset<uint32_t> board;
+		board.resize(newSize * newSize, false);
+		mGame.Reset(newSize, board, 0);
+
+		mGame.Click(newSize / 2, newSize / 2);
+		mRenderer.SetBoardBufferData(mGame.GetBoard());
+
+		wchar_t title[50];
+		swprintf_s(title, L"Lights out constructing %dx%d", newSize, newSize);
+		SetWindowText(mMainWnd, title);
+	}
+
 	mRenderer.ResetBoardSize(newSize);
-
-	wchar_t title[50];
-	swprintf_s(title, L"Lights out %dx%d", newSize, newSize);
-	SetWindowText(mMainWnd, title);
 
 	mCellSize = (uint32_t)(ceilf(EXPECTED_WND_SIZE / newSize) - 1);
 	uint32_t newWndSize = newSize * mCellSize + 1;
@@ -522,25 +549,155 @@ void LightsOutApp::ChangeGameSize(unsigned short newSize)
 	mRenderer.SetBoardBufferData(mGame.GetBoard());
 }
 
+void LightsOutApp::ChangeWorkingMode(WorkingMode newMode)
+{
+	mFlags = 0;
+	mWorkingMode = newMode;
+
+	if(mWorkingMode == WorkingMode::CONSTRUCT_CLICKRULE)
+	{
+		ClickRuleType curClickRuleType = mGame.GetClickRule()->RuleType();
+		switch(curClickRuleType)
+		{
+		case ClickRuleType::RULE_REGULAR:
+		case ClickRuleType::RULE_TOROID:
+		{
+			ChangeGameSize(3);
+			break;
+		}
+		case ClickRuleType::RULE_CUSTOM:
+		{
+			const LightsOutClickRuleCustom* customClickRule = dynamic_cast<const LightsOutClickRuleCustom*>(mGame.GetClickRule());
+			ChangeGameSize(customClickRule->RuleSize());
+			break;
+		}
+		default:
+			break;
+		}
+	}
+}
+
+void LightsOutApp::IncrementGameSize()
+{
+	if(mWorkingMode == WorkingMode::LIT_BOARD)
+	{
+		mFlags &= ~SHOW_STABILITY;
+		ChangeGameSize(mGame.GetSize() + 1);
+	}
+	else
+	{
+		ChangeGameSize(mGame.GetSize() + 2);
+	}
+}
+
+void LightsOutApp::DecrementGameSize()
+{
+	if (mWorkingMode == WorkingMode::LIT_BOARD)
+	{
+		mFlags &= ~SHOW_STABILITY;
+		ChangeGameSize(mGame.GetSize() - 1);
+	}
+	else
+	{
+		ChangeGameSize(mGame.GetSize() - 2);
+	}
+}
+
+void LightsOutApp::CancelClickRule()
+{
+	if(mWorkingMode == WorkingMode::LIT_BOARD)
+	{
+		return;
+	}
+
+	mWorkingMode = WorkingMode::LIT_BOARD;
+	mGame.SetClickRuleRegular();
+
+	ChangeGameSize(15);
+}
+
+void LightsOutApp::BakeClickRule()
+{
+	if (mWorkingMode == WorkingMode::LIT_BOARD)
+	{
+		return;
+	}
+
+	mWorkingMode = WorkingMode::LIT_BOARD;
+	mGame.SetClickRuleBaked();
+
+	ChangeGameSize(15);
+}
+
+void LightsOutApp::SetFlags(uint32_t FlagsMask)
+{
+	if(mWorkingMode != WorkingMode::LIT_BOARD)
+	{
+		return;
+	}
+
+	mFlags |= FlagsMask;
+}
+
+void LightsOutApp::DisableFlags(uint32_t FlagsMask)
+{
+	if(mWorkingMode != WorkingMode::LIT_BOARD)
+	{
+		return;
+	}
+
+	mFlags &= ~FlagsMask;
+}
+
+void LightsOutApp::ChangeFlags(uint32_t FlagsMask)
+{
+	if (mWorkingMode != WorkingMode::LIT_BOARD)
+	{
+		return;
+	}
+
+	mFlags ^= FlagsMask;
+}
+
+void LightsOutApp::SolveCurrentBoard(SolveMode solveMode)
+{
+	if(mWorkingMode != WorkingMode::LIT_BOARD)
+	{
+		return;
+	}
+
+	if(solveMode == SolveMode::SOLVE_ORDERED)
+	{
+		DisableFlags(IS_RANDOM_SOLVING);
+		DisableFlags(SHOW_STABILITY | SHOW_SOLUTION);
+	}
+	else
+	{
+		SetFlags(IS_RANDOM_SOLVING);
+		DisableFlags(SHOW_STABILITY | SHOW_SOLUTION);
+	}
+
+	auto solution = mSolver.GetSolution(mGame.GetBoard(), mGame.GetSize(), mGame.GetClickRule());
+	mTurnList.Reset(solution, mGame.GetSize());
+}
+
 void LightsOutApp::ResetBoard(WPARAM key)
 {
 	switch(key)
 	{
 	case VK_OEM_PLUS:
 	{
-		mFlags &= ~SHOW_STABILITY;
-		ChangeGameSize(mGame.GetSize() + 1);
+		IncrementGameSize();
 		break;
 	}
 	case VK_OEM_MINUS:
 	{
-		mFlags &= ~SHOW_STABILITY;
-		ChangeGameSize(mGame.GetSize() - 1);
+		DecrementGameSize();
 		break;
 	}
 	case VK_LEFT:
 	{
-		mFlags &= ~SHOW_STABILITY;
+		DisableFlags(SHOW_STABILITY);
 
 		auto leftBoard = mGame.GetBoard();
 		leftBoard = mSolver.MoveLeft(leftBoard, mGame.GetSize());
@@ -556,7 +713,7 @@ void LightsOutApp::ResetBoard(WPARAM key)
 	}
 	case VK_RIGHT:
 	{
-		mFlags &= ~SHOW_STABILITY;
+		DisableFlags(SHOW_STABILITY);
 
 		auto rightBoard = mGame.GetBoard();
 		rightBoard = mSolver.MoveRight(rightBoard, mGame.GetSize());
@@ -572,7 +729,7 @@ void LightsOutApp::ResetBoard(WPARAM key)
 	}
 	case VK_UP:
 	{
-		mFlags &= ~SHOW_STABILITY;
+		DisableFlags(SHOW_STABILITY);
 
 		auto upBoard = mGame.GetBoard();
 		upBoard = mSolver.MoveUp(upBoard, mGame.GetSize());
@@ -588,7 +745,7 @@ void LightsOutApp::ResetBoard(WPARAM key)
 	}
 	case VK_DOWN:
 	{
-		mFlags &= ~SHOW_STABILITY;
+		DisableFlags(SHOW_STABILITY);
 
 		auto downBoard = mGame.GetBoard();
 		downBoard = mSolver.MoveDown(downBoard, mGame.GetSize());
@@ -602,31 +759,29 @@ void LightsOutApp::ResetBoard(WPARAM key)
 
 		break;
 	}
+	case VK_ESCAPE:
+	{
+		CancelClickRule();
+		break;
+	}
+	case VK_RETURN:
+	{
+		BakeClickRule();
+		break;
+	}
 	case 'S':
 	{
-		mFlags &= ~SHOW_STABILITY;
-		mFlags &= ~SHOW_SOLUTION;
-		mFlags |= IS_RANDOM_SOLVING;
-
-		auto solution = mSolver.GetSolution(mGame.GetBoard(), mGame.GetSize(), mGame.GetClickRule());
-		mTurnList.Reset(solution, mGame.GetSize());
+		SolveCurrentBoard(SolveMode::SOLVE_RANDOM);
 		break;
 	}
 	case 'C':
 	{
-		mFlags &= ~SHOW_STABILITY;
-		mFlags &= ~SHOW_SOLUTION;
-		mFlags &= ~IS_RANDOM_SOLVING;
-
-		auto solution = mSolver.GetSolution(mGame.GetBoard(), mGame.GetSize(), mGame.GetClickRule());
-		mTurnList.Reset(solution, mGame.GetSize());
-
+		SolveCurrentBoard(SolveMode::SOLVE_ORDERED);
 		break;
 	}
 	case 'R':
 	{
-		mFlags &= ~SHOW_STABILITY;
-		mFlags &= ~SHOW_SOLUTION;
+		DisableFlags(SHOW_STABILITY | SHOW_SOLUTION);
 
 		LightsOutBoardGen boardGen;
 		auto newBoard = boardGen.Generate(mGame.GetSize(), RESET_FULL_RANDOM);
@@ -681,8 +836,9 @@ void LightsOutApp::ResetBoard(WPARAM key)
 	}
 	case 'A':
 	{
-		mFlags &= ~SHOW_SOLUTION;
-		mFlags ^= SHOW_STABILITY;
+		DisableFlags(SHOW_SOLUTION);
+		ChangeFlags(SHOW_STABILITY);
+
 		if (mFlags & SHOW_STABILITY)
 		{
 			auto stability = mGame.GetStability();
@@ -692,8 +848,7 @@ void LightsOutApp::ResetBoard(WPARAM key)
 	}
 	case 'P':
 	{
-		mFlags &= ~SHOW_STABILITY;
-		mFlags &= ~SHOW_SOLUTION;
+		DisableFlags(SHOW_STABILITY | SHOW_SOLUTION);
 
 		LightsOutBoardGen boardGen;
 		auto newBoard = boardGen.Generate(mGame.GetSize(), RESET_PETYA_STYLE);
@@ -840,10 +995,19 @@ void LightsOutApp::ChangeClickMode(WPARAM hotkey)
 	switch (hotkey)
 	{
 	case HOTKEY_ID_CLICKMODE_REGULAR:
-		mGame.SetClickRuleRegular();
+		if(mWorkingMode == WorkingMode::LIT_BOARD)
+		{
+			mGame.SetClickRuleRegular();
+		}
 		break;
 	case HOTKEY_ID_CLICKMODE_TOROID:
-		mGame.SetClickRuleToroid();
+		if(mWorkingMode == WorkingMode::LIT_BOARD)
+		{
+			mGame.SetClickRuleToroid();
+		}
+		break;
+	case HOTKEY_ID_CLICKMODE_CUSTOM:
+		ChangeWorkingMode(WorkingMode::CONSTRUCT_CLICKRULE);
 		break;
 	default:
 		break;
