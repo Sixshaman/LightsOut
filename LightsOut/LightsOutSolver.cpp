@@ -12,7 +12,8 @@ LightsOutSolver::~LightsOutSolver()
 
 void LightsOutSolver::GenerateInverseMatrix(uint16_t size, const LightsOutClickRule* clickRule)
 {
-	mClickRule = clickRule;
+	mClickRule         = clickRule;
+	mQuietPatternCount = 0;
 
 	int size_size = size*size;
 	LOMatrix base = clickRule->GenerateGameMatrix(size);
@@ -60,6 +61,11 @@ void LightsOutSolver::GenerateInverseMatrix(uint16_t size, const LightsOutClickR
 				mInvSolutionMatrix[j] ^= mInvSolutionMatrix[i];
 			}
 		}
+
+		if(base[i].none())
+		{
+			mQuietPatternCount++;
+		}
 	}
 
 	for(int i = 0; i < size_size; i++)
@@ -86,7 +92,7 @@ boost::dynamic_bitset<uint32_t> LightsOutSolver::GetSolution(const boost::dynami
 		return solution;
 	}
 
-	if (gameSize != mCurrentSize || mClickRule != clickRule)
+	if(gameSize != mCurrentSize || mClickRule != clickRule)
 	{
 		mInvSolutionMatrix.clear();
 		mCurrentSize = gameSize;
@@ -130,6 +136,22 @@ boost::dynamic_bitset<uint32_t> LightsOutSolver::GetInverseSolution(const boost:
 	}
 
 	return inverseSolution;
+}
+
+uint32_t LightsOutSolver::QuietPatternCount(uint16_t gameSize, const LightsOutClickRule* clickRule)
+{
+	if (gameSize != mCurrentSize || mClickRule != clickRule)
+	{
+		mInvSolutionMatrix.clear();
+		mCurrentSize = gameSize;
+	}
+
+	if (mInvSolutionMatrix.empty())
+	{
+		GenerateInverseMatrix(gameSize, clickRule);
+	}
+
+	return mQuietPatternCount;
 }
 
 boost::dynamic_bitset<uint32_t> LightsOutSolver::MoveLeft(const boost::dynamic_bitset<uint32_t>& board, uint16_t gameSize)

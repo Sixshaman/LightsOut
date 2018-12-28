@@ -18,6 +18,8 @@ public:
 	boost::dynamic_bitset<uint32_t> GetSolution(const boost::dynamic_bitset<uint32_t>& board, uint16_t gameSize, const LightsOutClickRule* clickRule);
 	boost::dynamic_bitset<uint32_t> GetInverseSolution(const boost::dynamic_bitset<uint32_t>& board, uint16_t gameSize, const LightsOutClickRule* clickRule);
 
+	uint32_t QuietPatternCount(uint16_t gameSize, const LightsOutClickRule* clickRule);
+
 	boost::dynamic_bitset<uint32_t> MoveLeft(const boost::dynamic_bitset<uint32_t>& board, uint16_t gameSize);
 	boost::dynamic_bitset<uint32_t> MoveRight(const boost::dynamic_bitset<uint32_t>& board, uint16_t gameSize);
 	boost::dynamic_bitset<uint32_t> MoveUp(const boost::dynamic_bitset<uint32_t>& board, uint16_t gameSize);
@@ -29,6 +31,7 @@ private:
 private:
 	LOMatrix                  mInvSolutionMatrix; //Current inverted matrix
 	const LightsOutClickRule* mClickRule;         //Current click rule
+	uint32_t                  mQuietPatternCount; //Base number of quiet patterns
 	uint16_t                  mCurrentSize;       //Current game size
 };
 

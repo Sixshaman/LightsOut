@@ -53,6 +53,7 @@ LightsOutApp::LightsOutApp(HINSTANCE hInstance): mAppInst(hInstance), mMainWnd(n
 	mCellSize = (uint32_t)(ceilf(EXPECTED_WND_SIZE / mGame.GetSize()) - 1);
 
 	mWorkingMode = WorkingMode::LIT_BOARD;
+	mWindowTitle = L"";
 
 	gApp = this;
 }
@@ -118,6 +119,8 @@ bool LightsOutApp::InitWnd()
 	mWndWidth = R.right - R.left;
 	mWndHeight = R.bottom - R.top;
 	
+	mWindowTitle = L"Lights out 15x15";
+
 	mMainWnd = CreateWindow(L"LightsOutWindow", L"Lights out 15x15", wndStyle, 0, 0,
 							mWndWidth, mWndHeight, nullptr, nullptr, mAppInst, 0);
 
@@ -490,27 +493,29 @@ void LightsOutApp::OnMouseClick(WPARAM btnState, uint32_t xPos, uint32_t yPos)
 
 void LightsOutApp::ChangeGameSize(unsigned short newSize)
 {
-	mFlags &= ~SHOW_SOLUTION;
+	ShowSolution(false);
+	ShowStability(false);
+
 	mFlags &= ~IS_PERIOD_COUNTING;
 	mFlags &= ~IS_PERIO4_COUNTING;
 	mFlags &= ~IS_EIGVEC_COUNTING;
+
 	mPeriodCount = 0;
 	mEigenvecTurn = PointOnBoard(-1, -1);
 	mCountedBoard.clear();
+	mTurnList.Clear();
 
 	Clamp(newSize, (unsigned short)MINIMUM_FIELD_SIZE, (unsigned short)MAXIMUM_FIELD_SIZE);
 	
 	if(mWorkingMode == WorkingMode::LIT_BOARD)
 	{
-		LightsOutBoardGen boardGen;
-		auto newBoard = boardGen.Generate(newSize, RESET_FULL_RANDOM);
-		newBoard = mSolver.GetInverseSolution(newBoard, newSize, mGame.GetClickRule());
-
-		mGame.Reset(newSize, newBoard, 0);
+		ResetGameBoard(ResetMode::RESET_SOLVABLE_RANDOM, newSize);
 
 		wchar_t title[50];
 		swprintf_s(title, L"Lights out %dx%d", newSize, newSize);
 		SetWindowText(mMainWnd, title);
+
+		mWindowTitle = title;
 	}
 	else
 	{
@@ -524,6 +529,8 @@ void LightsOutApp::ChangeGameSize(unsigned short newSize)
 		wchar_t title[50];
 		swprintf_s(title, L"Lights out constructing %dx%d", newSize, newSize);
 		SetWindowText(mMainWnd, title);
+
+		mWindowTitle = title;
 	}
 
 	mRenderer.ResetBoardSize(newSize);
@@ -551,7 +558,10 @@ void LightsOutApp::ChangeGameSize(unsigned short newSize)
 
 void LightsOutApp::ChangeWorkingMode(WorkingMode newMode)
 {
-	mFlags = 0;
+	ShowSolution(false);
+	ShowStability(false);
+
+	mFlags       = 0;
 	mWorkingMode = newMode;
 
 	if(mWorkingMode == WorkingMode::CONSTRUCT_CLICKRULE)
@@ -577,11 +587,214 @@ void LightsOutApp::ChangeWorkingMode(WorkingMode newMode)
 	}
 }
 
+void LightsOutApp::ResetGameBoard(ResetMode resetMode, uint16_t gameSize)
+{
+	if(resetMode == ResetMode::RESET_LEFT || resetMode == ResetMode::RESET_RIGHT || resetMode == ResetMode::RESET_UP || resetMode == ResetMode::RESET_DOWN)
+	{
+		ShowStability(false);
+
+		auto newBoard = mGame.GetBoard();
+		switch (resetMode)
+		{
+		case ResetMode::RESET_LEFT:
+			newBoard = mSolver.MoveLeft(newBoard, mGame.GetSize());
+			break;
+		case ResetMode::RESET_RIGHT:
+			newBoard = mSolver.MoveRight(newBoard, mGame.GetSize());
+			break;
+		case ResetMode::RESET_UP:
+			newBoard = mSolver.MoveUp(newBoard, mGame.GetSize());
+			break;
+		case ResetMode::RESET_DOWN:
+			newBoard = mSolver.MoveDown(newBoard, mGame.GetSize());
+			break;
+		default:
+			break;
+		}
+
+		mGame.Reset(mGame.GetSize(), newBoard, 0);
+
+		if(mFlags & SHOW_SOLUTION)
+		{
+			mSolution = mSolver.GetSolution(mGame.GetBoard(), mGame.GetSize(), mGame.GetClickRule());
+			mRenderer.SetSolutionBufferData(mSolution);
+		}
+	}
+	else if(resetMode == ResetMode::RESET_SOLUTION)
+	{
+		if (mWorkingMode != WorkingMode::LIT_BOARD)
+		{
+			return;
+		}
+
+		if(mFlags & SHOW_SOLUTION)
+		{
+			mGame.Reset(mGame.GetSize(), mSolution, RESET_FLAG_LEAVE_STABILITY);
+			mRenderer.SetStabilityBufferData(mGame.GetStability());
+			ShowSolution(false);
+		}
+		else if (mFlags & SHOW_STABILITY)
+		{
+			mGame.Reset(mGame.GetSize(), mGame.GetStability(), 0);
+			mRenderer.SetStabilityBufferData(mGame.GetStability());
+			ShowStability(false);
+		}
+	}
+	else if(resetMode == ResetMode::RESET_INVERTO)
+	{
+		ShowStability(false);
+
+		boost::dynamic_bitset<uint32_t> inverseBoard = ~(mGame.GetBoard());
+		mGame.Reset(mGame.GetSize(), inverseBoard, 0);
+
+		if(mFlags & SHOW_SOLUTION)
+		{
+			mSolution = mSolver.GetSolution(mGame.GetBoard(), mGame.GetSize(), mGame.GetClickRule());
+			mRenderer.SetSolutionBufferData(mSolution);
+		}
+	}
+	else if(resetMode == ResetMode::RESET_SOLVABLE_RANDOM)
+	{
+		if(mWorkingMode != WorkingMode::LIT_BOARD)
+		{
+			return;
+		}
+
+		ShowStability(false);
+		ShowSolution(false);
+
+		uint16_t resetSize = (gameSize == 0) ? mGame.GetSize() : gameSize;
+
+		LightsOutBoardGen boardGen;
+		auto newBoard = boardGen.Generate(resetSize, BoardGenMode::BOARDGEN_FULL_RANDOM);
+		newBoard = mSolver.GetInverseSolution(newBoard, resetSize, mGame.GetClickRule());
+		mGame.Reset(resetSize, newBoard, 0);
+	}
+	else
+	{
+		ShowStability(false);
+		ShowSolution(false);
+
+		BoardGenMode modeBoardGen = BoardGenMode::BOARDGEN_ONE_ELEMENT;
+		switch (resetMode)
+		{
+		case ResetMode::RESET_ONE:
+			modeBoardGen = BoardGenMode::BOARDGEN_ONE_ELEMENT;
+			break;
+		case ResetMode::RESET_ZERO:
+			modeBoardGen = BoardGenMode::BOARDGEN_ZERO_ELEMENT;
+			break;
+		case ResetMode::RESET_BORDER:
+			modeBoardGen = BoardGenMode::BOARDGEN_BORDER;
+			break;
+		case ResetMode::RESET_PETYA:
+			modeBoardGen = BoardGenMode::BOARDGEN_PETYA_STYLE;
+			break;
+		case ResetMode::RESET_BLATNOY:
+			modeBoardGen = BoardGenMode::BOARDGEN_BLATNOY;
+			break;
+		case ResetMode::RESET_FULL_RANDOM:
+			modeBoardGen = BoardGenMode::BOARDGEN_FULL_RANDOM;
+			break;
+		default:
+			break;
+		}
+
+		uint16_t resetSize = (gameSize == 0) ? mGame.GetSize() : gameSize;
+
+		LightsOutBoardGen boardGen;
+		auto newBoard = boardGen.Generate(resetSize, modeBoardGen);
+		mGame.Reset(resetSize, newBoard, 0);
+	}
+
+	mRenderer.SetBoardBufferData(mGame.GetBoard());
+}
+
+void LightsOutApp::ShowSolution(bool bShow)
+{
+	if(mWorkingMode != WorkingMode::LIT_BOARD)
+	{
+		DisableFlags(SHOW_SOLUTION);
+		return;
+	}
+
+	if(bShow)
+	{
+		SetFlags(SHOW_SOLUTION);
+
+		mSolution = mSolver.GetSolution(mGame.GetBoard(), mGame.GetSize(), mGame.GetClickRule());
+		mRenderer.SetSolutionBufferData(mSolution);
+		mRenderer.SetSolutionVisible(true);
+	}
+	else
+	{
+		DisableFlags(SHOW_SOLUTION);
+
+		mSolution.clear();
+		mRenderer.SetSolutionVisible(false);
+	}
+}
+
+void LightsOutApp::ShowInverseSolution(bool bShow)
+{
+	if(mWorkingMode != WorkingMode::LIT_BOARD)
+	{
+		DisableFlags(SHOW_SOLUTION);
+		return;
+	}
+
+	if (bShow)
+	{
+		SetFlags(SHOW_SOLUTION);
+
+		mSolution = mSolver.GetInverseSolution(mGame.GetBoard(), mGame.GetSize(), mGame.GetClickRule());
+		mRenderer.SetSolutionBufferData(mSolution);
+		mRenderer.SetSolutionVisible(true);
+	}
+	else
+	{
+		DisableFlags(SHOW_SOLUTION);
+
+		mSolution.clear();
+		mRenderer.SetSolutionVisible(false);
+	}
+}
+
+void LightsOutApp::ShowStability(bool bShow)
+{
+	if(mWorkingMode != WorkingMode::LIT_BOARD)
+	{
+		DisableFlags(SHOW_STABILITY);
+		return;
+	}
+
+	if (bShow)
+	{
+		SetFlags(SHOW_STABILITY);
+		ShowSolution(false);
+
+		auto stability = mGame.GetStability();
+		mRenderer.SetStabilityBufferData(stability);
+		mRenderer.SetStabilityVisible(true);
+	}
+	else
+	{
+		DisableFlags(SHOW_STABILITY);
+		mRenderer.SetStabilityVisible(false);
+	}
+}
+
+void LightsOutApp::ShowQuietPatternCount()
+{
+	SetWindowText(mMainWnd, (mWindowTitle + L"...").c_str());
+	std::wstring wndTitle = mWindowTitle + L" (QP count: " + std::to_wstring(mSolver.QuietPatternCount(mGame.GetSize(), mGame.GetClickRule())) + L")";
+	SetWindowText(mMainWnd, wndTitle.c_str());
+}
+
 void LightsOutApp::IncrementGameSize()
 {
 	if(mWorkingMode == WorkingMode::LIT_BOARD)
 	{
-		mFlags &= ~SHOW_STABILITY;
 		ChangeGameSize(mGame.GetSize() + 1);
 	}
 	else
@@ -594,7 +807,6 @@ void LightsOutApp::DecrementGameSize()
 {
 	if (mWorkingMode == WorkingMode::LIT_BOARD)
 	{
-		mFlags &= ~SHOW_STABILITY;
 		ChangeGameSize(mGame.GetSize() - 1);
 	}
 	else
@@ -623,7 +835,7 @@ void LightsOutApp::BakeClickRule()
 		return;
 	}
 
-	mWorkingMode = WorkingMode::LIT_BOARD;
+	ChangeWorkingMode(WorkingMode::LIT_BOARD);
 	mGame.SetClickRuleBaked();
 
 	ChangeGameSize(15);
@@ -666,22 +878,23 @@ void LightsOutApp::SolveCurrentBoard(SolveMode solveMode)
 		return;
 	}
 
+	ShowStability(false);
+	ShowSolution(false);
+
 	if(solveMode == SolveMode::SOLVE_ORDERED)
 	{
 		DisableFlags(IS_RANDOM_SOLVING);
-		DisableFlags(SHOW_STABILITY | SHOW_SOLUTION);
 	}
 	else
 	{
 		SetFlags(IS_RANDOM_SOLVING);
-		DisableFlags(SHOW_STABILITY | SHOW_SOLUTION);
 	}
 
 	auto solution = mSolver.GetSolution(mGame.GetBoard(), mGame.GetSize(), mGame.GetClickRule());
 	mTurnList.Reset(solution, mGame.GetSize());
 }
 
-void LightsOutApp::ResetBoard(WPARAM key)
+void LightsOutApp::OnKeyReleased(WPARAM key)
 {
 	switch(key)
 	{
@@ -697,66 +910,22 @@ void LightsOutApp::ResetBoard(WPARAM key)
 	}
 	case VK_LEFT:
 	{
-		DisableFlags(SHOW_STABILITY);
-
-		auto leftBoard = mGame.GetBoard();
-		leftBoard = mSolver.MoveLeft(leftBoard, mGame.GetSize());
-		mGame.Reset(mGame.GetSize(), leftBoard, 0);
-
-		if(mFlags & SHOW_SOLUTION)
-		{
-			mSolution = mSolver.GetSolution(mGame.GetBoard(), mGame.GetSize(), mGame.GetClickRule());
-			mRenderer.SetSolutionBufferData(mSolution);
-		}
-
+		ResetGameBoard(ResetMode::RESET_LEFT);
 		break;
 	}
 	case VK_RIGHT:
 	{
-		DisableFlags(SHOW_STABILITY);
-
-		auto rightBoard = mGame.GetBoard();
-		rightBoard = mSolver.MoveRight(rightBoard, mGame.GetSize());
-		mGame.Reset(mGame.GetSize(), rightBoard, 0);
-
-		if (mFlags & SHOW_SOLUTION)
-		{
-			mSolution = mSolver.GetSolution(mGame.GetBoard(), mGame.GetSize(), mGame.GetClickRule());
-			mRenderer.SetSolutionBufferData(mSolution);
-		}
-
+		ResetGameBoard(ResetMode::RESET_RIGHT);
 		break;
 	}
 	case VK_UP:
 	{
-		DisableFlags(SHOW_STABILITY);
-
-		auto upBoard = mGame.GetBoard();
-		upBoard = mSolver.MoveUp(upBoard, mGame.GetSize());
-		mGame.Reset(mGame.GetSize(), upBoard, 0);
-
-		if (mFlags & SHOW_SOLUTION)
-		{
-			mSolution = mSolver.GetSolution(mGame.GetBoard(), mGame.GetSize(), mGame.GetClickRule());
-			mRenderer.SetSolutionBufferData(mSolution);
-		}
-
+		ResetGameBoard(ResetMode::RESET_UP);
 		break;
 	}
 	case VK_DOWN:
 	{
-		DisableFlags(SHOW_STABILITY);
-
-		auto downBoard = mGame.GetBoard();
-		downBoard = mSolver.MoveDown(downBoard, mGame.GetSize());
-		mGame.Reset(mGame.GetSize(), downBoard, 0);
-
-		if (mFlags & SHOW_SOLUTION)
-		{
-			mSolution = mSolver.GetSolution(mGame.GetBoard(), mGame.GetSize(), mGame.GetClickRule());
-			mRenderer.SetSolutionBufferData(mSolution);
-		}
-
+		ResetGameBoard(ResetMode::RESET_DOWN);
 		break;
 	}
 	case VK_ESCAPE:
@@ -781,149 +950,70 @@ void LightsOutApp::ResetBoard(WPARAM key)
 	}
 	case 'R':
 	{
-		DisableFlags(SHOW_STABILITY | SHOW_SOLUTION);
-
-		LightsOutBoardGen boardGen;
-		auto newBoard = boardGen.Generate(mGame.GetSize(), RESET_FULL_RANDOM);
-		newBoard = mSolver.GetInverseSolution(newBoard, mGame.GetSize(), mGame.GetClickRule());
-		mGame.Reset(mGame.GetSize(), newBoard, 0);
-
+		ResetGameBoard(ResetMode::RESET_SOLVABLE_RANDOM);
 		break;
 	}
 	case 'F':
 	{
-		mFlags &= ~SHOW_STABILITY;
-		mFlags &= ~SHOW_SOLUTION;
-
-		LightsOutBoardGen boardGen;
-		auto newBoard = boardGen.Generate(mGame.GetSize(), RESET_FULL_RANDOM);
-		mGame.Reset(mGame.GetSize(), newBoard, 0);
-
+		ResetGameBoard(ResetMode::RESET_FULL_RANDOM);
 		break;
 	}
 	case '0':
 	{
-		mFlags &= ~SHOW_STABILITY;
-		mFlags &= ~SHOW_SOLUTION;
-
-		LightsOutBoardGen boardGen;
-		auto newBoard = boardGen.Generate(mGame.GetSize(), RESET_ZERO_ELEMENT);
-		mGame.Reset(mGame.GetSize(), newBoard, 0);
-
+		ResetGameBoard(ResetMode::RESET_ZERO);
 		break;
 	}
 	case '1':
 	{
-		mFlags &= ~SHOW_STABILITY;
-		mFlags &= ~SHOW_SOLUTION;
-
-		LightsOutBoardGen boardGen;
-		auto newBoard = boardGen.Generate(mGame.GetSize(), RESET_ONE_ELEMENT);
-		mGame.Reset(mGame.GetSize(), newBoard, 0);
-
+		ResetGameBoard(ResetMode::RESET_ONE);
 		break;
 	}
 	case 'B':
 	{
-		mFlags &= ~SHOW_STABILITY;
-		mFlags &= ~SHOW_SOLUTION;
-
-		LightsOutBoardGen boardGen;
-		auto newBoard = boardGen.Generate(mGame.GetSize(), RESET_BLATNOY);
-		mGame.Reset(mGame.GetSize(), newBoard, 0);
-
-		break;
-	}
-	case 'A':
-	{
-		DisableFlags(SHOW_SOLUTION);
-		ChangeFlags(SHOW_STABILITY);
-
-		if (mFlags & SHOW_STABILITY)
-		{
-			auto stability = mGame.GetStability();
-			mRenderer.SetStabilityBufferData(stability);
-		}
+		ResetGameBoard(ResetMode::RESET_BLATNOY);
 		break;
 	}
 	case 'P':
 	{
-		DisableFlags(SHOW_STABILITY | SHOW_SOLUTION);
-
-		LightsOutBoardGen boardGen;
-		auto newBoard = boardGen.Generate(mGame.GetSize(), RESET_PETYA_STYLE);
-		mGame.Reset(mGame.GetSize(), newBoard, 0);
-
+		ResetGameBoard(ResetMode::RESET_PETYA);
 		break;
 	}
 	case 'O':
 	{
-		mFlags &= ~SHOW_STABILITY;
-		mFlags &= ~SHOW_SOLUTION;
-
-		LightsOutBoardGen boardGen;
-		auto newBoard = boardGen.Generate(mGame.GetSize(), RESET_BORDER);
-		mGame.Reset(mGame.GetSize(), newBoard, 0);
-
-		break;
-	}
-	case 'E':
-	{
-		if(mFlags & SHOW_SOLUTION)
-		{
-			mGame.Reset(mGame.GetSize(), mSolution, RESET_FLAG_LEAVE_STABILITY);
-			mRenderer.SetStabilityBufferData(mGame.GetStability());
-			mFlags &= ~SHOW_SOLUTION;
-		}
-		else if (mFlags & SHOW_STABILITY)
-		{
-			mGame.Reset(mGame.GetSize(), mGame.GetStability(), 0);
-			mRenderer.SetStabilityBufferData(mGame.GetStability());
-			mFlags &= ~SHOW_STABILITY;
-		}
-
-		break;
-	}
-	case 'T':
-	{
-		mFlags ^= SHOW_SOLUTION;
-		
-		if(mFlags & SHOW_SOLUTION)
-		{
-			mSolution = mSolver.GetSolution(mGame.GetBoard(), mGame.GetSize(), mGame.GetClickRule());
-			mRenderer.SetSolutionBufferData(mSolution);
-		}
-		else
-		{
-			mSolution.clear();
-		}
-
-		break;
-	}
-	case 'W':
-	{
-		mFlags ^= SHOW_SOLUTION;
-
-		if (mFlags & SHOW_SOLUTION)
-		{
-			mSolution = mSolver.GetInverseSolution(mGame.GetBoard(), mGame.GetSize(), mGame.GetClickRule());
-			mRenderer.SetSolutionBufferData(mSolution);
-		}
-		else
-		{
-			mSolution.clear();
-		}
-
+		ResetGameBoard(ResetMode::RESET_BORDER);
 		break;
 	}
 	case 'I':
 	{
-		mFlags &= ~SHOW_STABILITY;
-		mFlags &= ~SHOW_SOLUTION;
-
-		boost::dynamic_bitset<uint32_t> inverseBoard = ~(mGame.GetBoard());
-		mGame.Reset(mGame.GetSize(), inverseBoard, 0);
-
+		ResetGameBoard(ResetMode::RESET_INVERTO);
+		break;
+	}
+	case 'E':
+	{
+		ResetGameBoard(ResetMode::RESET_SOLUTION);
+		break;
+	}
+	case 'T':
+	{
+		ChangeFlags(SHOW_SOLUTION);
+		ShowSolution(mFlags & SHOW_SOLUTION);
+		break;
+	}
+	case 'W':
+	{
+		ChangeFlags(SHOW_SOLUTION);
+		ShowInverseSolution(mFlags & SHOW_SOLUTION);
+		break;
+	}
+	case 'A':
+	{
+		ChangeFlags(SHOW_STABILITY);
+		ShowStability(mFlags & SHOW_STABILITY);
+		break;
+	}
+	case 'Q':
+	{
+		ShowQuietPatternCount();
 		break;
 	}
 	case 'V':
@@ -981,28 +1071,25 @@ void LightsOutApp::ResetBoard(WPARAM key)
 		break;
 	}
 	}
-
-	mRenderer.SetSolutionVisible((mFlags & SHOW_SOLUTION) != 0);
-	mRenderer.SetStabilityVisible(((mFlags & SHOW_SOLUTION) == 0) && (mFlags & SHOW_STABILITY) != 0);
-	mRenderer.SetBoardBufferData(mGame.GetBoard());
 }
 
-void LightsOutApp::ChangeClickMode(WPARAM hotkey)
+void LightsOutApp::OnHotkeyPresed(WPARAM hotkey)
 {
-	mFlags &= ~SHOW_SOLUTION;
-	mFlags &= ~SHOW_STABILITY;
-
 	switch (hotkey)
 	{
 	case HOTKEY_ID_CLICKMODE_REGULAR:
 		if(mWorkingMode == WorkingMode::LIT_BOARD)
 		{
+			ShowSolution(false);
+			ShowStability(false);
 			mGame.SetClickRuleRegular();
 		}
 		break;
 	case HOTKEY_ID_CLICKMODE_TOROID:
 		if(mWorkingMode == WorkingMode::LIT_BOARD)
 		{
+			ShowSolution(false);
+			ShowStability(false);
 			mGame.SetClickRuleToroid();
 		}
 		break;
@@ -1043,7 +1130,7 @@ LRESULT CALLBACK LightsOutApp::AppProc(HWND hWnd, uint32_t message, WPARAM wPara
 	{
 		if(!HotkeyHolding)
 		{
-			ResetBoard(wParam);
+			OnKeyReleased(wParam);
 		}
 
 		if(wParam != VK_CONTROL)
@@ -1056,7 +1143,7 @@ LRESULT CALLBACK LightsOutApp::AppProc(HWND hWnd, uint32_t message, WPARAM wPara
 	{
 		if (!HotkeyHolding)
 		{
-			ChangeClickMode(wParam);
+			OnHotkeyPresed(wParam);
 		}
 		HotkeyHolding = true;
 		break;

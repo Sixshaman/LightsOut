@@ -9,6 +9,11 @@ LightsOutTurnList::~LightsOutTurnList()
 {
 }
 
+void LightsOutTurnList::Clear()
+{
+	mTurns.clear();
+}
+
 void LightsOutTurnList::Reset(const boost::dynamic_bitset<uint32_t>& board, uint16_t gameSize)
 {
 	for (int i = 0; i < board.size(); i++)

@@ -26,6 +26,30 @@ enum class SolveMode
 	SOLVE_ORDERED
 };
 
+enum class ResetMode
+{
+	RESET_ONE,
+	RESET_ZERO,
+	RESET_BORDER,
+	RESET_PETYA,
+	RESET_BLATNOY,
+	RESET_SOLVABLE_RANDOM,
+	RESET_FULL_RANDOM,
+	RESET_SOLUTION,
+	RESET_INVERTO,
+	RESET_LEFT,
+	RESET_RIGHT,
+	RESET_UP,
+	RESET_DOWN
+};
+
+enum class CountingMode
+{
+	COUNT_SOLUTION_PERIOD,
+	COUNT_INVERSE_SOLUTION_PERIOD,
+	COUNT_SOLUTION_PERIOD_4X
+};
+
 class LightsOutApp
 {
 public:
@@ -50,11 +74,19 @@ private:
 	void SaveBoard(uint32_t expectedSize);
 
 	void OnMenuItem(WPARAM State);
-	void ResetBoard(WPARAM key);
-	void ChangeClickMode(WPARAM hotkey);
+	void OnKeyReleased(WPARAM key);
+	void OnHotkeyPresed(WPARAM hotkey);
 
 	void ChangeGameSize(unsigned short newSize);
 	void ChangeWorkingMode(WorkingMode newMode);
+
+	void ResetGameBoard(ResetMode resetMode, uint16_t gameSize = 0);
+
+	void ShowSolution(bool bShow);
+	void ShowInverseSolution(bool bShow);
+	void ShowStability(bool bShow);
+
+	void ShowQuietPatternCount();
 
 	void IncrementGameSize();
 	void DecrementGameSize();
@@ -81,16 +113,17 @@ private:
 	uint32_t    mCellSize;    //Calculated from game size
 	WorkingMode mWorkingMode; //Current working mode
 
-	boost::dynamic_bitset<uint32_t> mSolution; //Solution cells
-
 	uint32_t                        mPeriodCount;
 	boost::dynamic_bitset<uint32_t> mCountedBoard;
+
+	boost::dynamic_bitset<uint32_t> mSolution; //Solution cells
 
 	PointOnBoard      mEigenvecTurn;
 	LightsOutTurnList mTurnList;
 
-	int mWndWidth;
-	int mWndHeight;
+	int          mWndWidth;
+	int          mWndHeight;
+	std::wstring mWindowTitle;
 
 	uint32_t mFlags; //Some flags for showing the board
 };

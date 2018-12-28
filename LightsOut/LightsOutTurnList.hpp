@@ -17,6 +17,7 @@ public:
 	LightsOutTurnList();
 	~LightsOutTurnList();
 
+	void Clear();
 	void Reset(const boost::dynamic_bitset<uint32_t>& board, uint16_t gameSize);
 
 	bool TurnsLeft() const { return !mTurns.empty(); }
