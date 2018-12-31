@@ -8,7 +8,8 @@ enum class ClickRuleType
 {
 	RULE_REGULAR,
 	RULE_TOROID,
-	RULE_CUSTOM
+	RULE_CUSTOM,
+	RULE_CUSTOR
 };
 
 class LightsOutClickRule
@@ -52,6 +53,25 @@ class LightsOutClickRuleCustom: public LightsOutClickRule
 public:
 	LightsOutClickRuleCustom(const boost::dynamic_bitset<uint32_t>& bakedRule, uint16_t ruleSize);
 	~LightsOutClickRuleCustom();
+
+	void Click(boost::dynamic_bitset<uint32_t>& board, uint16_t gameSize, uint16_t posX, uint16_t posY) const override;
+	LOMatrix GenerateGameMatrix(uint16_t gameSize) const override;
+	ClickRuleType RuleType() const override;
+
+	uint16_t RuleSize() const;
+
+private:
+	boost::dynamic_bitset<uint32_t> mRuleDefinition;
+	uint16_t mRuleSize;
+};
+
+//---------------------------------------------------------------------------------------------------------------------------------
+
+class LightsOutClickRuleCustor: public LightsOutClickRule
+{
+public:
+	LightsOutClickRuleCustor(const boost::dynamic_bitset<uint32_t>& bakedRule, uint16_t ruleSize);
+	~LightsOutClickRuleCustor();
 
 	void Click(boost::dynamic_bitset<uint32_t>& board, uint16_t gameSize, uint16_t posX, uint16_t posY) const override;
 	LOMatrix GenerateGameMatrix(uint16_t gameSize) const override;

@@ -41,6 +41,7 @@
 #define HOTKEY_ID_CLICKMODE_REGULAR 1001
 #define HOTKEY_ID_CLICKMODE_TOROID  1002
 #define HOTKEY_ID_CLICKMODE_CUSTOM  1003
+#define HOTKEY_ID_CLICKMODE_CUSTOR  1004
 
 namespace
 {
@@ -54,6 +55,9 @@ LightsOutApp::LightsOutApp(HINSTANCE hInstance): mAppInst(hInstance), mMainWnd(n
 
 	mWorkingMode = WorkingMode::LIT_BOARD;
 	mWindowTitle = L"";
+
+	mSavedSize = 0;
+	mSavedBoard.clear();
 
 	gApp = this;
 }
@@ -193,6 +197,7 @@ bool LightsOutApp::InitHotkeys()
 	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_CLICKMODE_REGULAR, MOD_CONTROL, 'R');
 	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_CLICKMODE_TOROID,  MOD_CONTROL, 'T');
 	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_CLICKMODE_CUSTOM,  MOD_CONTROL, 'M');
+	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_CLICKMODE_CUSTOR,  MOD_CONTROL, 'O');
 
 	return result;
 }
@@ -472,7 +477,7 @@ void LightsOutApp::OnMouseClick(WPARAM btnState, uint32_t xPos, uint32_t yPos)
 			mGame.Click(modX, modY);
 		}
 	}
-	else if(mWorkingMode == WorkingMode::CONSTRUCT_CLICKRULE)
+	else if(mWorkingMode == WorkingMode::CONSTRUCT_CLICKRULE || mWorkingMode == WorkingMode::CONSTRUCT_CLICKRULE_TOROID)
 	{
 		mGame.ConstructClick(modX, modY);
 	}
@@ -491,21 +496,16 @@ void LightsOutApp::OnMouseClick(WPARAM btnState, uint32_t xPos, uint32_t yPos)
 	}
 }
 
-void LightsOutApp::ChangeGameSize(unsigned short newSize)
+void LightsOutApp::ChangeGameSize(int32_t newSize)
 {
 	ShowSolution(false);
 	ShowStability(false);
 
-	mFlags &= ~IS_PERIOD_COUNTING;
-	mFlags &= ~IS_PERIO4_COUNTING;
-	mFlags &= ~IS_EIGVEC_COUNTING;
-
-	mPeriodCount = 0;
+	ChangeCountingMode(CountingMode::COUNT_NONE);
 	mEigenvecTurn = PointOnBoard(-1, -1);
-	mCountedBoard.clear();
 	mTurnList.Clear();
 
-	Clamp(newSize, (unsigned short)MINIMUM_FIELD_SIZE, (unsigned short)MAXIMUM_FIELD_SIZE);
+	Clamp(newSize, MINIMUM_FIELD_SIZE, MAXIMUM_FIELD_SIZE);
 	
 	if(mWorkingMode == WorkingMode::LIT_BOARD)
 	{
@@ -564,8 +564,11 @@ void LightsOutApp::ChangeWorkingMode(WorkingMode newMode)
 	mFlags       = 0;
 	mWorkingMode = newMode;
 
-	if(mWorkingMode == WorkingMode::CONSTRUCT_CLICKRULE)
+	if(mWorkingMode == WorkingMode::CONSTRUCT_CLICKRULE || mWorkingMode == WorkingMode::CONSTRUCT_CLICKRULE_TOROID)
 	{
+		mSavedSize  = mGame.GetSize();
+		mSavedBoard = mGame.GetBoard();
+
 		ClickRuleType curClickRuleType = mGame.GetClickRule()->RuleType();
 		switch(curClickRuleType)
 		{
@@ -578,6 +581,12 @@ void LightsOutApp::ChangeWorkingMode(WorkingMode newMode)
 		case ClickRuleType::RULE_CUSTOM:
 		{
 			const LightsOutClickRuleCustom* customClickRule = dynamic_cast<const LightsOutClickRuleCustom*>(mGame.GetClickRule());
+			ChangeGameSize(customClickRule->RuleSize());
+			break;
+		}
+		case ClickRuleType::RULE_CUSTOR:
+		{
+			const LightsOutClickRuleCustor* customClickRule = dynamic_cast<const LightsOutClickRuleCustor*>(mGame.GetClickRule());
 			ChangeGameSize(customClickRule->RuleSize());
 			break;
 		}
@@ -600,6 +609,7 @@ void LightsOutApp::ChangeCountingMode(CountingMode cntMode)
 
 	mPeriodCount = 0;
 	ShowSolution(false);
+	mTurnList.Clear();
 
 	switch(cntMode)
 	{
@@ -630,6 +640,8 @@ void LightsOutApp::ChangeCountingMode(CountingMode cntMode)
 
 void LightsOutApp::ResetGameBoard(ResetMode resetMode, uint16_t gameSize)
 {
+	mTurnList.Clear();
+
 	if(resetMode == ResetMode::RESET_LEFT || resetMode == ResetMode::RESET_RIGHT || resetMode == ResetMode::RESET_UP || resetMode == ResetMode::RESET_DOWN)
 	{
 		ShowStability(false);
@@ -759,6 +771,8 @@ void LightsOutApp::ShowSolution(bool bShow)
 		return;
 	}
 
+	mTurnList.Clear();
+
 	if(bShow)
 	{
 		SetFlags(SHOW_SOLUTION);
@@ -784,6 +798,8 @@ void LightsOutApp::ShowInverseSolution(bool bShow)
 		return;
 	}
 
+	mTurnList.Clear();
+
 	if (bShow)
 	{
 		SetFlags(SHOW_SOLUTION);
@@ -808,6 +824,8 @@ void LightsOutApp::ShowStability(bool bShow)
 		DisableFlags(SHOW_STABILITY);
 		return;
 	}
+
+	mTurnList.Clear();
 
 	if (bShow)
 	{
@@ -836,11 +854,11 @@ void LightsOutApp::IncrementGameSize()
 {
 	if(mWorkingMode == WorkingMode::LIT_BOARD)
 	{
-		ChangeGameSize(mGame.GetSize() + 1);
+		ChangeGameSize((int32_t)mGame.GetSize() + 1);
 	}
 	else
 	{
-		ChangeGameSize(mGame.GetSize() + 2);
+		ChangeGameSize((int32_t)mGame.GetSize() + 2);
 	}
 }
 
@@ -848,11 +866,11 @@ void LightsOutApp::DecrementGameSize()
 {
 	if (mWorkingMode == WorkingMode::LIT_BOARD)
 	{
-		ChangeGameSize(mGame.GetSize() - 1);
+		ChangeGameSize((int32_t)mGame.GetSize() - 1);
 	}
 	else
 	{
-		ChangeGameSize(mGame.GetSize() - 2);
+		ChangeGameSize((int32_t)mGame.GetSize() - 2);
 	}
 }
 
@@ -866,7 +884,9 @@ void LightsOutApp::CancelClickRule()
 	mWorkingMode = WorkingMode::LIT_BOARD;
 	mGame.SetClickRuleRegular();
 
-	ChangeGameSize(15);
+	ChangeGameSize(mSavedSize);
+	mGame.Reset(mSavedSize, mSavedBoard, 0);
+	mRenderer.SetBoardBufferData(mGame.GetBoard());
 }
 
 void LightsOutApp::BakeClickRule()
@@ -876,10 +896,20 @@ void LightsOutApp::BakeClickRule()
 		return;
 	}
 
-	ChangeWorkingMode(WorkingMode::LIT_BOARD);
-	mGame.SetClickRuleBaked();
+	if(mWorkingMode == WorkingMode::CONSTRUCT_CLICKRULE)
+	{
+		mGame.SetClickRuleBaked();
+	}
+	else if (mWorkingMode == WorkingMode::CONSTRUCT_CLICKRULE_TOROID)
+	{
+		mGame.SetClickRuleBakedToroid();
+	}
 
-	ChangeGameSize(15);
+	ChangeWorkingMode(WorkingMode::LIT_BOARD);
+	ChangeGameSize(mSavedSize);
+
+	mGame.Reset(mSavedSize, mSavedBoard, 0);
+	mRenderer.SetBoardBufferData(mGame.GetBoard());
 }
 
 void LightsOutApp::SetFlags(uint32_t FlagsMask)
@@ -922,17 +952,25 @@ void LightsOutApp::SolveCurrentBoard(SolveMode solveMode)
 	ShowStability(false);
 	ShowSolution(false);
 
-	if(solveMode == SolveMode::SOLVE_ORDERED)
+	if(solveMode == SolveMode::SOLVE_NONE)
 	{
+		mTurnList.Clear();
 		DisableFlags(IS_RANDOM_SOLVING);
 	}
 	else
 	{
-		SetFlags(IS_RANDOM_SOLVING);
-	}
+		if (solveMode == SolveMode::SOLVE_ORDERED)
+		{
+			DisableFlags(IS_RANDOM_SOLVING);
+		}
+		else
+		{
+			SetFlags(IS_RANDOM_SOLVING);
+		}
 
-	auto solution = mSolver.GetSolution(mGame.GetBoard(), mGame.GetSize(), mGame.GetClickRule());
-	mTurnList.Reset(solution, mGame.GetSize());
+		auto solution = mSolver.GetSolution(mGame.GetBoard(), mGame.GetSize(), mGame.GetClickRule());
+		mTurnList.Reset(solution, mGame.GetSize());
+	}
 }
 
 void LightsOutApp::OnKeyReleased(WPARAM key)
@@ -981,12 +1019,12 @@ void LightsOutApp::OnKeyReleased(WPARAM key)
 	}
 	case 'S':
 	{
-		SolveCurrentBoard(SolveMode::SOLVE_RANDOM);
+		SolveCurrentBoard(!mTurnList.TurnsLeft() ? SolveMode::SOLVE_RANDOM : SolveMode::SOLVE_NONE);
 		break;
 	}
 	case 'C':
 	{
-		SolveCurrentBoard(SolveMode::SOLVE_ORDERED);
+		SolveCurrentBoard(!mTurnList.TurnsLeft() ? SolveMode::SOLVE_ORDERED : SolveMode::SOLVE_NONE);
 		break;
 	}
 	case 'R':
@@ -1097,6 +1135,9 @@ void LightsOutApp::OnHotkeyPresed(WPARAM hotkey)
 		break;
 	case HOTKEY_ID_CLICKMODE_CUSTOM:
 		ChangeWorkingMode(WorkingMode::CONSTRUCT_CLICKRULE);
+		break;
+	case HOTKEY_ID_CLICKMODE_CUSTOR:
+		ChangeWorkingMode(WorkingMode::CONSTRUCT_CLICKRULE_TOROID);
 		break;
 	default:
 		break;

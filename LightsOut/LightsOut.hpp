@@ -79,10 +79,11 @@ private:
 	void OnKeyReleased(WPARAM key);
 	void OnHotkeyPresed(WPARAM hotkey);
 
-	void ChangeGameSize(unsigned short newSize);
+	void ChangeGameSize(int32_t newSize);
 	void ChangeWorkingMode(WorkingMode newMode);
 	void ChangeCountingMode(CountingMode cntMode);
 
+	void SolveCurrentBoard(SolveMode solveMode);
 	void ResetGameBoard(ResetMode resetMode, uint16_t gameSize = 0);
 
 	void ShowSolution(bool bShow);
@@ -101,8 +102,6 @@ private:
 	void DisableFlags(uint32_t FlagsMask);
 	void ChangeFlags(uint32_t FlagsMask);
 
-	void SolveCurrentBoard(SolveMode solveMode);
-
 private:
 	HINSTANCE mAppInst;
 	HWND	  mMainWnd;
@@ -120,6 +119,9 @@ private:
 	boost::dynamic_bitset<uint32_t> mCountedBoard;
 
 	boost::dynamic_bitset<uint32_t> mSolution; //Solution cells
+
+	uint16_t                        mSavedSize;
+	boost::dynamic_bitset<uint32_t> mSavedBoard;
 
 	PointOnBoard      mEigenvecTurn;
 	LightsOutTurnList mTurnList;

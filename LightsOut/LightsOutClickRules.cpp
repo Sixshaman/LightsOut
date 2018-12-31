@@ -117,7 +117,7 @@ ClickRuleType LightsOutClickRuleToroid::RuleType() const
 LightsOutClickRuleCustom::LightsOutClickRuleCustom(const boost::dynamic_bitset<uint32_t>& bakedRule, uint16_t ruleSize)
 {
 	mRuleDefinition = bakedRule;
-	mRuleSize = ruleSize;
+	mRuleSize       = ruleSize;
 }
 
 LightsOutClickRuleCustom::~LightsOutClickRuleCustom()
@@ -187,6 +187,79 @@ ClickRuleType LightsOutClickRuleCustom::RuleType() const
 }
 
 uint16_t LightsOutClickRuleCustom::RuleSize() const
+{
+	return mRuleSize;
+}
+
+//==================================================================================================================================
+
+LightsOutClickRuleCustor::LightsOutClickRuleCustor(const boost::dynamic_bitset<uint32_t>& bakedRule, uint16_t ruleSize)
+{
+	mRuleDefinition = bakedRule;
+	mRuleSize       = ruleSize;
+}
+
+LightsOutClickRuleCustor::~LightsOutClickRuleCustor()
+{
+}
+
+void LightsOutClickRuleCustor::Click(boost::dynamic_bitset<uint32_t>& board, uint16_t gameSize, uint16_t posX, uint16_t posY) const
+{
+	boost::dynamic_bitset<uint32_t> populatedRule;
+	populatedRule.resize(board.size(), false);
+
+	int32_t sizeHalf = mRuleSize / 2;
+
+	int32_t left = (int32_t)posX - sizeHalf;
+	int32_t top  = (int32_t)posY - sizeHalf;
+
+	for(int32_t y = 0; y < mRuleSize; y++)
+	{
+		int32_t yBig = y + top;
+		int32_t yBigMod = ((yBig % gameSize) + gameSize) % gameSize;
+
+		for(int32_t x = 0; x < mRuleSize; x++)
+		{
+			int32_t xBig    = x + left;
+			int32_t xBigMod = ((xBig % gameSize) + gameSize) % gameSize;
+
+			uint32_t indexBig       = yBigMod * gameSize + xBigMod;
+			uint32_t indexSm        = y * mRuleSize + x;
+			populatedRule[indexBig] = populatedRule[indexBig] ^ mRuleDefinition[indexSm];
+		}
+	}
+
+	board = board ^ populatedRule;
+}
+
+LOMatrix LightsOutClickRuleCustor::GenerateGameMatrix(uint16_t gameSize) const
+{
+	int si_si = gameSize * gameSize;
+	LOMatrix lightMatrix;
+
+	for(int i = 0; i < si_si; i++)
+	{
+		lightMatrix.push_back(boost::dynamic_bitset<uint32_t>(si_si));
+		lightMatrix[i].reset();
+	}
+
+	for(int i = 0; i < si_si; i++)
+	{
+		uint16_t x = i % gameSize;
+		uint16_t y = i / gameSize;
+
+		Click(lightMatrix[i], gameSize, x, y);
+	}
+
+	return lightMatrix;
+}
+
+ClickRuleType LightsOutClickRuleCustor::RuleType() const
+{
+	return ClickRuleType::RULE_CUSTOR;
+}
+
+uint16_t LightsOutClickRuleCustor::RuleSize() const
 {
 	return mRuleSize;
 }

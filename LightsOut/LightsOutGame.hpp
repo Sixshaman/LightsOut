@@ -26,6 +26,7 @@ public:
 	void SetClickRuleRegular();
 	void SetClickRuleToroid();
 	void SetClickRuleBaked();
+	void SetClickRuleBakedToroid();
 
 	void Reset(uint16_t size, const boost::dynamic_bitset<uint32_t>& board, uint32_t resetFlags);
 
