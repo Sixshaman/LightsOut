@@ -587,6 +587,47 @@ void LightsOutApp::ChangeWorkingMode(WorkingMode newMode)
 	}
 }
 
+void LightsOutApp::ChangeCountingMode(CountingMode cntMode)
+{
+	if (mWorkingMode != WorkingMode::LIT_BOARD)
+	{
+		return;
+	}
+
+	mFlags &= ~IS_PERIO4_COUNTING;
+	mFlags &= ~IS_PERIOD_BACK_COUNTING;
+	mFlags &= ~IS_PERIOD_COUNTING;
+
+	mPeriodCount = 0;
+	ShowSolution(false);
+
+	switch(cntMode)
+	{
+	case CountingMode::COUNT_NONE:
+		break;
+	case CountingMode::COUNT_SOLUTION_PERIOD:
+		mFlags |= IS_PERIOD_COUNTING;
+		break;
+	case CountingMode::COUNT_SOLUTION_PERIOD_4X:
+		mFlags |= IS_PERIO4_COUNTING;
+		break;
+	case CountingMode::COUNT_INVERSE_SOLUTION_PERIOD:
+		mFlags |= IS_PERIOD_BACK_COUNTING;
+		break;
+	default:
+		break;
+	}
+
+	if(cntMode == CountingMode::COUNT_NONE)
+	{
+		mCountedBoard.clear();
+	}
+	else
+	{
+		mCountedBoard = mGame.GetBoard();
+	}
+}
+
 void LightsOutApp::ResetGameBoard(ResetMode resetMode, uint16_t gameSize)
 {
 	if(resetMode == ResetMode::RESET_LEFT || resetMode == ResetMode::RESET_RIGHT || resetMode == ResetMode::RESET_UP || resetMode == ResetMode::RESET_DOWN)
@@ -995,20 +1036,17 @@ void LightsOutApp::OnKeyReleased(WPARAM key)
 	}
 	case 'T':
 	{
-		ChangeFlags(SHOW_SOLUTION);
-		ShowSolution(mFlags & SHOW_SOLUTION);
+		ShowSolution(!(mFlags & SHOW_SOLUTION));
 		break;
 	}
 	case 'W':
 	{
-		ChangeFlags(SHOW_SOLUTION);
-		ShowInverseSolution(mFlags & SHOW_SOLUTION);
+		ShowInverseSolution(!(mFlags & SHOW_SOLUTION));
 		break;
 	}
 	case 'A':
 	{
-		ChangeFlags(SHOW_STABILITY);
-		ShowStability(mFlags & SHOW_STABILITY);
+		ShowStability(!(mFlags & SHOW_STABILITY));
 		break;
 	}
 	case 'Q':
@@ -1018,56 +1056,20 @@ void LightsOutApp::OnKeyReleased(WPARAM key)
 	}
 	case 'V':
 	{
-		mFlags &= ~IS_PERIO4_COUNTING;
-		mFlags &= ~IS_PERIOD_BACK_COUNTING;
-
-		if(!(mFlags & IS_PERIOD_COUNTING))
-		{
-			mFlags |= IS_PERIOD_COUNTING;
-			mCountedBoard = mGame.GetBoard();
-		}
-		else
-		{
-			mFlags &= ~IS_PERIOD_COUNTING;
-			mCountedBoard.clear();
-		}
-		mPeriodCount = 0;
-
+		const uint32_t countFlags = IS_PERIOD_COUNTING | IS_PERIO4_COUNTING | IS_PERIOD_BACK_COUNTING;
+		ChangeCountingMode(!(mFlags & countFlags) ? CountingMode::COUNT_SOLUTION_PERIOD : CountingMode::COUNT_NONE);
 		break;
 	}
 	case 'X':
 	{
-		mFlags &= ~IS_PERIOD_COUNTING;
-		mFlags &= ~IS_PERIOD_BACK_COUNTING;
-
-		if (!(mFlags & IS_PERIO4_COUNTING))
-		{
-			mFlags |= IS_PERIO4_COUNTING;
-		}
-		else
-		{
-			mFlags &= ~IS_PERIO4_COUNTING;
-		}
+		const uint32_t countFlags = IS_PERIOD_COUNTING | IS_PERIO4_COUNTING | IS_PERIOD_BACK_COUNTING;
+		ChangeCountingMode(!(mFlags & countFlags) ? CountingMode::COUNT_SOLUTION_PERIOD_4X : CountingMode::COUNT_NONE);
 		break;
 	}
 	case 'Z':
 	{
-		mFlags &= ~IS_PERIOD_COUNTING;
-		mFlags &= ~IS_PERIO4_COUNTING;
-
-		if (!(mFlags & IS_PERIOD_BACK_COUNTING))
-		{
-			mFlags |= IS_PERIOD_BACK_COUNTING;
-			mCountedBoard = mGame.GetBoard();
-		}
-		else
-		{
-			mFlags &= ~IS_PERIOD_BACK_COUNTING;
-			mCountedBoard.clear();
-		}
-
-		mPeriodCount = 0;
-
+		const uint32_t countFlags = IS_PERIOD_COUNTING | IS_PERIO4_COUNTING | IS_PERIOD_BACK_COUNTING;
+		ChangeCountingMode(!(mFlags & countFlags) ? CountingMode::COUNT_INVERSE_SOLUTION_PERIOD : CountingMode::COUNT_NONE);
 		break;
 	}
 	}

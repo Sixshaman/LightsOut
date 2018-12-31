@@ -22,6 +22,7 @@ enum class WorkingMode
 
 enum class SolveMode
 {
+	SOLVE_NONE,
 	SOLVE_RANDOM,
 	SOLVE_ORDERED
 };
@@ -45,6 +46,7 @@ enum class ResetMode
 
 enum class CountingMode
 {
+	COUNT_NONE,
 	COUNT_SOLUTION_PERIOD,
 	COUNT_INVERSE_SOLUTION_PERIOD,
 	COUNT_SOLUTION_PERIOD_4X
@@ -79,6 +81,7 @@ private:
 
 	void ChangeGameSize(unsigned short newSize);
 	void ChangeWorkingMode(WorkingMode newMode);
+	void ChangeCountingMode(CountingMode cntMode);
 
 	void ResetGameBoard(ResetMode resetMode, uint16_t gameSize = 0);
 
