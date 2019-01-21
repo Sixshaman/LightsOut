@@ -28,7 +28,7 @@ void LightsOutGame::Reset(const LightsOutBoard& board, uint32_t resetFlags)
 void LightsOutGame::ResetStability(uint16_t gameSize)
 {
 	mStability.Reset(gameSize);
-	mStability.Flip();
+	mStability.DomainRotate();
 }
 
 void LightsOutGame::Click(uint16_t posX, uint16_t posY)
@@ -82,6 +82,11 @@ LightsOutBoard LightsOutGame::GetStability()
 uint16_t LightsOutGame::GetSize()
 {
 	return mMainBoard.Size();
+}
+
+uint16_t LightsOutGame::GetDomainSize()
+{
+	return mMainBoard.DomainSize();
 }
 
 const LightsOutClickRule* LightsOutGame::GetClickRule() const

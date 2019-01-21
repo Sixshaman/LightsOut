@@ -173,6 +173,22 @@ void LightsOutBoard::BoardMul(const LightsOutBoard& board)
 	}
 }
 
+void LightsOutBoard::BoardMulNum(uint16_t mul)
+{
+	if(DomainSize() == 2)
+	{
+		if(mul == 0)
+		{
+			mpImpl->Reset(Size());
+		}
+	}
+	else
+	{
+		LightsOutNaryBoardImpl* boardNaryImpl = reinterpret_cast<LightsOutNaryBoardImpl*>(mpImpl);
+		boardNaryImpl->MulBoardNum(mul);
+	}
+}
+
 void LightsOutBoard::BoardSubMul(const LightsOutBoard& board, uint16_t mul)
 {
 	if(DomainSize() != board.DomainSize() || Size() != board.Size() || mul == 0)
@@ -221,9 +237,18 @@ void LightsOutBoard::BoardIncDif(const LightsOutBoard& board1, const LightsOutBo
 	}
 }
 
-void LightsOutBoard::Flip()
+void LightsOutBoard::DomainRotate()
 {
 	mpImpl->Flip();
+}
+
+void LightsOutBoard::InvertValues()
+{
+	if (DomainSize() > 2)
+	{
+		LightsOutNaryBoardImpl* boardNaryImpl = reinterpret_cast<LightsOutNaryBoardImpl*>(mpImpl);
+		boardNaryImpl->InvertValues();
+	}
 }
 
 bool LightsOutBoard::IsNone() const

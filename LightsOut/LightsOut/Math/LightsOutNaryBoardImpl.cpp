@@ -42,7 +42,7 @@ void LightsOutNaryBoardImpl::AddBoard(const LightsOutNaryBoardImpl* right)
 {
 	for(uint32_t i = 0; i < mBoard.size(); i++) //TODO: SSE
 	{
-		mBoard[i] = ((int32_t)mBoard[i] + right->mBoard[i]) % mDomainSize;
+		mBoard[i] = ((int32_t)mBoard[i] + (int32_t)right->mBoard[i]) % mDomainSize;
 	}
 }
 
@@ -50,7 +50,7 @@ void LightsOutNaryBoardImpl::SubBoard(const LightsOutNaryBoardImpl* right)
 {
 	for (uint32_t i = 0; i < mBoard.size(); i++) //TODO: SSE
 	{
-		mBoard[i] = ((((int32_t)mBoard[i] - right->mBoard[i]) % mDomainSize) + mDomainSize) % mDomainSize;
+		mBoard[i] = ((((int32_t)mBoard[i] - (int32_t)right->mBoard[i]) % mDomainSize) + mDomainSize) % mDomainSize;
 	}
 }
 
@@ -59,11 +59,19 @@ void LightsOutNaryBoardImpl::MulBoard(const LightsOutNaryBoardImpl* right)
 	uint64_t sum = 0;
 	for(uint32_t i = 0; i < mBoard.size(); i++)
 	{
-		sum += ((uint32_t)mBoard[i] * right->mBoard[i]);
+		sum += ((uint32_t)mBoard[i] * (int32_t)right->mBoard[i]);
 	}
 
 	sum = sum % mDomainSize;
 	mBoard[0] = (uint16_t)sum;
+}
+
+void LightsOutNaryBoardImpl::MulBoardNum(uint16_t mul)
+{
+	for(uint32_t i = 0; i < mBoard.size(); i++) //TODO: SSE
+	{
+		mBoard[i] = (mBoard[i] * mul) % mDomainSize;
+	}
 }
 
 void LightsOutNaryBoardImpl::SubMulBoard(const LightsOutNaryBoardImpl* right, uint16_t mul)
@@ -75,7 +83,8 @@ void LightsOutNaryBoardImpl::SubMulBoard(const LightsOutNaryBoardImpl* right, ui
 
 	for(uint32_t i = 0; i < mBoard.size(); i++) //TODO: SSE
 	{
-		mBoard[i] = ((((int32_t)mBoard[i] - (int32_t)mul * right->mBoard[i]) % mDomainSize) + mDomainSize) % mDomainSize;
+		int32_t res = (int32_t)mBoard[i] - (int32_t)mul * (int32_t)right->mBoard[i];
+		mBoard[i] = ((res % mDomainSize) + mDomainSize) % mDomainSize;
 	}
 }
 
@@ -99,25 +108,33 @@ bool LightsOutNaryBoardImpl::IsEqual(const LightsOutNaryBoardImpl* right)
 
 void LightsOutNaryBoardImpl::Flip()
 {
+	for(uint32_t cell: mBoard)
+	{
+		cell = (cell + 1) % mDomainSize;
+	}
+}
+
+void LightsOutNaryBoardImpl::InvertValues()
+{
 	for(uint32_t& cell: mBoard)
 	{
-		cell = mDomainSize - cell;
+		cell = (mDomainSize - cell) % mDomainSize;
 	}
 }
 
 bool LightsOutNaryBoardImpl::IsNone() const
 {
 	bool nonZero = false;
-	for(uint16_t cell: mBoard)
+	for(uint32_t cell: mBoard)
 	{
-		if(cell != 0 && mDomainSize % cell != 0)
+		if(cell != 0 && (cell == 1 || mDomainSize % cell != 0))
 		{
 			nonZero = true;
 			break;
 		}
 	}
 
-	return nonZero;
+	return !nonZero;
 }
 
 void LightsOutNaryBoardImpl::CopyMemoryData(uint32_t* buf, uint32_t maxSize) const

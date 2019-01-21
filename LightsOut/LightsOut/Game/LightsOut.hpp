@@ -80,11 +80,12 @@ private:
 	void OnHotkeyPresed(WPARAM hotkey);
 
 	void ChangeGameSize(int32_t newSize);
+	void ChangeDomainSize(int32_t newDomainSize);
 	void ChangeWorkingMode(WorkingMode newMode);
 	void ChangeCountingMode(CountingMode cntMode, bool stopWhenReturned);
 
 	void SolveCurrentBoard(SolveMode solveMode);
-	void ResetGameBoard(ResetMode resetMode, uint16_t gameSize = 0);
+	void ResetGameBoard(ResetMode resetMode, uint16_t gameSize = 0, uint16_t domainSize = 0);
 
 	void ShowSolution(bool bShow);
 	void ShowInverseSolution(bool bShow);

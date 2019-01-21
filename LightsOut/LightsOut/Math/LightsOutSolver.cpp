@@ -43,6 +43,7 @@ LightsOutBoard LightsOutSolver::GetSolution(const LightsOutBoard& board, const L
 		}
 	}
 
+	solution.InvertValues();
 	return solution;
 }
 
@@ -66,6 +67,7 @@ LightsOutBoard LightsOutSolver::GetInverseSolution(const LightsOutBoard& board, 
 		}
 	}
 
+	inverseSolution.InvertValues();
 	return inverseSolution;
 }
 

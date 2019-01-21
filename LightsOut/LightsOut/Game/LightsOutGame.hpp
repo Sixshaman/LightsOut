@@ -32,7 +32,9 @@ public:
 
 	LightsOutBoard GetBoard();
 	LightsOutBoard GetStability();
-	uint16_t       GetSize();
+
+	uint16_t GetSize();
+	uint16_t GetDomainSize();
 
 	const LightsOutClickRule* GetClickRule() const;
 

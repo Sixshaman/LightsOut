@@ -87,17 +87,20 @@ uint32_t LightsOutMatrix::Inverto()
 
 		uint16_t xMajor = xMinor;
 		uint16_t yMajor = yMinor;
-		uint16_t curVal = GetVal(xMajor, yMajor, xMinor, yMinor);
-		if(curVal == 0 || (curVal != 1 && mDomainSize % curVal == 0))
+
+		uint16_t thisVal = GetVal(xMajor, yMajor, xMinor, yMinor);
+		uint16_t compVal = GetVal(xMajor, yMajor, xMinor, yMinor);
+		if(domainInvs[compVal] == 0 || (thisVal != 1 && mDomainSize % thisVal == 0))
 		{
 			for(uint32_t j = i + 1; j < mSizeBig; j++)
 			{
-				xMajor = j % mSizeSmall;
-				yMajor = j / mSizeSmall;
-				curVal = GetVal(xMajor, yMajor, xMinor, yMinor);
+				xMajor  = j % mSizeSmall;
+				yMajor  = j / mSizeSmall;
+				compVal = GetVal(xMajor, yMajor, xMinor, yMinor);
 
-				if(domainInvs[curVal] != 0)
+				if(domainInvs[compVal] != 0)
 				{
+					thisVal = compVal;
 					std::swap(mCellClickRules[i], mCellClickRules[j]);
 					std::swap(invMatrix[i],       invMatrix[j]);
 					break;
@@ -107,15 +110,15 @@ uint32_t LightsOutMatrix::Inverto()
 
 		for(int j = i + 1; j < mSizeBig; j++)
 		{
-			xMajor = j % mSizeSmall;
-			yMajor = j / mSizeSmall;
-			curVal = GetVal(xMajor, yMajor, xMinor, yMinor);
+			xMajor  = j % mSizeSmall;
+			yMajor  = j / mSizeSmall;
+			compVal = GetVal(xMajor, yMajor, xMinor, yMinor);
 			
-			if(domainInvs[curVal] != 0)
+			if(domainInvs[compVal] != 0)
 			{
-				uint16_t invCurVal = domainInvs[curVal];
-				mCellClickRules[j].BoardSubMul(mCellClickRules[i], invCurVal);
-				invMatrix[j].BoardSubMul(invMatrix[i], invCurVal);
+				int32_t invThisVal = domainInvs[thisVal];
+				mCellClickRules[j].BoardSubMul(mCellClickRules[i], invThisVal * compVal);
+				invMatrix[j].BoardSubMul(invMatrix[i], invThisVal * compVal);
 			}
 		}
 	}
@@ -126,18 +129,26 @@ uint32_t LightsOutMatrix::Inverto()
 		uint16_t xMinor = i % mSizeSmall;
 		uint16_t yMinor = i / mSizeSmall;
 
+		uint16_t thisVal = GetVal(xMinor, yMinor, xMinor, yMinor);
 		for (int j = i - 1; j >= 0; j--)
 		{
-			uint16_t xMajor = j % mSizeSmall;
-			uint16_t yMajor = j / mSizeSmall;
-			uint16_t curVal = GetVal(xMajor, yMajor, xMinor, yMinor);
+			uint16_t xMajor  = j % mSizeSmall;
+			uint16_t yMajor  = j / mSizeSmall;
+			uint16_t compVal = GetVal(xMajor, yMajor, xMinor, yMinor);
 
-			if(domainInvs[curVal] != 0)
+			if(domainInvs[compVal] != 0)
 			{
-				uint16_t invCurVal = domainInvs[curVal];
-				mCellClickRules[j].BoardSubMul(mCellClickRules[i], invCurVal);
-				invMatrix[j].BoardSubMul(invMatrix[i], invCurVal);
+				int32_t invThisVal = domainInvs[thisVal];
+				mCellClickRules[j].BoardSubMul(mCellClickRules[i], invThisVal * compVal);
+				invMatrix[j].BoardSubMul(invMatrix[i], invThisVal * compVal);
 			}
+		}
+
+		if(domainInvs[thisVal] != 0)
+		{
+			uint16_t invThisVal = domainInvs[thisVal];
+			mCellClickRules[i].BoardMulNum(invThisVal);
+			invMatrix[i].BoardMulNum(invThisVal);
 		}
 
 		if(mCellClickRules[i].IsNone())

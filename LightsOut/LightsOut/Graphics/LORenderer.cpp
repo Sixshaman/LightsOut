@@ -117,6 +117,11 @@ void LightsOutRenderer::ResetBoardSize(uint16_t newSize)
 	LOTextures::ResizeBoard(newSize, cellSize, md3dDevice.Get());
 }
 
+void LightsOutRenderer::ResetDomainSize(uint16_t newDomainSize)
+{
+	ComputeBoardVariables::SetDomainSize(newDomainSize);
+}
+
 void LightsOutRenderer::SetSolutionVisible(bool visible)
 {
 	ComputeBoardVariables::SetSolutionVisible(visible);
@@ -292,6 +297,9 @@ void LightsOutRenderer::DrawBoardOnTexture(uint16_t cellSize, uint16_t gameSize)
 		break;
 	case DrawType::DRAW_CHAINS:
 		ComputeBoardShaders::SetComputeBoardChainsShader(md3dContext.Get());
+		break;
+	case DrawType::DRAW_SQUARES_DOMAIN:
+		ComputeBoardShaders::SetComputeEveryBoardShader(md3dContext.Get());
 		break;
 	default:
 		ComputeBoardShaders::SetComputeBoardShader(md3dContext.Get());

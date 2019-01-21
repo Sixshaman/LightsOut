@@ -41,10 +41,11 @@ void ShaderBinder::UnbindVertexPixelShaders(ID3D11DeviceContext *dc)
 
 #pragma region ComputeBoard
 
-ID3D11ComputeShader *ComputeBoardShaders::mComputeBoardShader         = nullptr;
-ID3D11ComputeShader *ComputeBoardShaders::mComputeBoardCirclesShader  = nullptr;
-ID3D11ComputeShader *ComputeBoardShaders::mComputeBoardRaindopsShader = nullptr;
-ID3D11ComputeShader *ComputeBoardShaders::mComputeBoardChainsShader   = nullptr;
+ID3D11ComputeShader* ComputeBoardShaders::mComputeBoardShader         = nullptr;
+ID3D11ComputeShader* ComputeBoardShaders::mComputeBoardCirclesShader  = nullptr;
+ID3D11ComputeShader* ComputeBoardShaders::mComputeBoardRaindopsShader = nullptr;
+ID3D11ComputeShader* ComputeBoardShaders::mComputeBoardChainsShader   = nullptr;
+ID3D11ComputeShader* ComputeBoardShaders::mComputeEveryBoardShader    = nullptr;
 
 bool ComputeBoardShaders::InitAll(ID3D11Device *device)
 {
@@ -88,6 +89,13 @@ bool ComputeBoardShaders::InitAll(ID3D11Device *device)
 
 	ASSERT_ERR(device->CreateComputeShader(shader->GetBufferPointer(), shader->GetBufferSize(), nullptr, &mComputeBoardChainsShader));
 
+	if (FAILED(D3DReadFileToBlob((ShaderPath + L"ComputeEveryBoard.cso").c_str(), &shader)))
+	{
+		MessageBox(NULL, L"Cannot read shader file", L"Error", MB_ICONERROR | MB_OK);
+	}
+
+	ASSERT_ERR(device->CreateComputeShader(shader->GetBufferPointer(), shader->GetBufferSize(), nullptr, &mComputeEveryBoardShader));
+
 	return true;
 }
 
@@ -97,6 +105,7 @@ void ComputeBoardShaders::DestroyAll()
 	SafeRelease(mComputeBoardCirclesShader);
 	SafeRelease(mComputeBoardRaindopsShader);
 	SafeRelease(mComputeBoardChainsShader);
+	SafeRelease(mComputeEveryBoardShader);
 }
 
 void ComputeBoardShaders::SetComputeBoardShader(ID3D11DeviceContext *dc)
@@ -117,6 +126,11 @@ void ComputeBoardShaders::SetComputeBoardRaindropsShader(ID3D11DeviceContext *dc
 void ComputeBoardShaders::SetComputeBoardChainsShader(ID3D11DeviceContext* dc)
 {
 	dc->CSSetShader(mComputeBoardChainsShader, nullptr, 0);
+}
+
+void ComputeBoardShaders::SetComputeEveryBoardShader(ID3D11DeviceContext* dc)
+{
+	dc->CSSetShader(mComputeEveryBoardShader, nullptr, 0);
 }
 
 #pragma endregion ComputeBoard

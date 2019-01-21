@@ -48,6 +48,9 @@
 #define HOTKEY_ID_PERIO4_COUNT      2002
 #define HOTKEY_ID_PERIOD_BACK_COUNT 2003
 
+#define HOTKEY_ID_DECREASE_DOMAIN_SIZE 3001
+#define HOTKEY_ID_INCREASE_DOMAIN_SIZE 3002
+
 namespace
 {
 	LightsOutApp *gApp = nullptr;
@@ -205,6 +208,9 @@ bool LightsOutApp::InitHotkeys()
 	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_PERIOD_COUNT,      MOD_CONTROL, 'V');
 	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_PERIO4_COUNT,      MOD_CONTROL, 'X');
 	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_PERIOD_BACK_COUNT, MOD_CONTROL, 'Z');
+
+	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_DECREASE_DOMAIN_SIZE, MOD_CONTROL, VK_OEM_MINUS);
+	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_INCREASE_DOMAIN_SIZE, MOD_CONTROL, VK_OEM_PLUS);
 
 	return result;
 }
@@ -558,7 +564,7 @@ void LightsOutApp::ChangeGameSize(int32_t newSize)
 	}
 	else
 	{
-		LightsOutBoard board(newSize, 2);
+		LightsOutBoard board(newSize, mGame.GetDomainSize());
 		mGame.Reset(board, 0);
 
 		mGame.Click(newSize / 2, newSize / 2);
@@ -591,6 +597,44 @@ void LightsOutApp::ChangeGameSize(int32_t newSize)
 	SetWindowPos(mMainWnd, HWND_NOTOPMOST, WindowPosX, WindowPosY, mWndWidth, mWndHeight, 0);
 	mRenderer.OnWndResize(mWndWidth, mWndHeight);
 
+	mRenderer.SetBoardToDraw(mGame.GetBoard());
+}
+
+void LightsOutApp::ChangeDomainSize(int32_t newDomainSize)
+{
+	if(mWorkingMode != WorkingMode::LIT_BOARD)
+	{
+		return;
+	}
+
+	ShowSolution(false);
+	ShowStability(false);
+
+	ChangeCountingMode(CountingMode::COUNT_NONE, false);
+	mEigenvecTurn = PointOnBoard(-1, -1);
+	mTurnList.Clear();
+
+	Clamp(newDomainSize, 2, 255);
+	
+	ResetGameBoard(ResetMode::RESET_SOLVABLE_RANDOM, mGame.GetSize(), newDomainSize);
+	mGame.SetClickRuleRegular();
+
+	wchar_t title[50];
+	swprintf_s(title, L"Lights out %dx%d on domain %d", mGame.GetSize(), mGame.GetSize(), newDomainSize);
+	SetWindowText(mMainWnd, title);
+
+	mWindowTitle = title;
+	
+	if(newDomainSize == 2)
+	{
+		mRenderer.SetDrawType(DrawType::DRAW_SQUARES);
+	}
+	else
+	{
+		mRenderer.SetDrawType(DrawType::DRAW_SQUARES_DOMAIN);
+	}
+
+	mRenderer.ResetDomainSize(newDomainSize);
 	mRenderer.SetBoardToDraw(mGame.GetBoard());
 }
 
@@ -688,7 +732,7 @@ void LightsOutApp::ChangeCountingMode(CountingMode cntMode, bool stopWhenReturne
 	}
 }
 
-void LightsOutApp::ResetGameBoard(ResetMode resetMode, uint16_t gameSize)
+void LightsOutApp::ResetGameBoard(ResetMode resetMode, uint16_t gameSize, uint16_t domainSize)
 {
 	mTurnList.Clear();
 
@@ -748,7 +792,7 @@ void LightsOutApp::ResetGameBoard(ResetMode resetMode, uint16_t gameSize)
 		ShowStability(false);
 
 		LightsOutBoard inverseBoard = mGame.GetBoard();
-		inverseBoard.Flip();
+		inverseBoard.DomainRotate();
 		mGame.Reset(inverseBoard, 0);
 
 		if(mFlags & SHOW_SOLUTION)
@@ -767,10 +811,11 @@ void LightsOutApp::ResetGameBoard(ResetMode resetMode, uint16_t gameSize)
 		ShowStability(false);
 		ShowSolution(false);
 
-		uint16_t resetSize = (gameSize == 0) ? mGame.GetSize() : gameSize;
+		uint16_t resetSize       = (gameSize   == 0) ? mGame.GetSize()       : gameSize;
+		uint16_t resetDomainSize = (domainSize == 0) ? mGame.GetDomainSize() : domainSize;
 
 		LightsOutBoardGen boardGen;
-		auto newBoard = boardGen.Generate(resetSize, 2, BoardGenMode::BOARDGEN_FULL_RANDOM);
+		auto newBoard = boardGen.Generate(resetSize, resetDomainSize, BoardGenMode::BOARDGEN_FULL_RANDOM);
 		newBoard = mSolver.GetInverseSolution(newBoard, mGame.GetClickRule());
 		mGame.Reset(newBoard, 0);
 	}
@@ -804,10 +849,11 @@ void LightsOutApp::ResetGameBoard(ResetMode resetMode, uint16_t gameSize)
 			break;
 		}
 
-		uint16_t resetSize = (gameSize == 0) ? mGame.GetSize() : gameSize;
+		uint16_t resetSize       = (gameSize   == 0) ? mGame.GetSize()       : gameSize;
+		uint16_t resetDomainSize = (domainSize == 0) ? mGame.GetDomainSize() : domainSize;
 
 		LightsOutBoardGen boardGen;
-		auto newBoard = boardGen.Generate(resetSize, 2, modeBoardGen);
+		auto newBoard = boardGen.Generate(resetSize, resetDomainSize, modeBoardGen);
 		mGame.Reset(newBoard, 0);
 	}
 
@@ -1210,6 +1256,16 @@ void LightsOutApp::OnHotkeyPresed(WPARAM hotkey)
 	{
 		const uint32_t countFlags = IS_PERIOD_COUNTING | IS_PERIO4_COUNTING | IS_PERIOD_BACK_COUNTING;
 		ChangeCountingMode(!(mFlags & countFlags) ? CountingMode::COUNT_INVERSE_SOLUTION_PERIOD : CountingMode::COUNT_NONE, true);
+		break;
+	}
+	case HOTKEY_ID_DECREASE_DOMAIN_SIZE:
+	{
+		ChangeDomainSize((int32_t)mGame.GetDomainSize() - 1);
+		break;
+	}
+	case HOTKEY_ID_INCREASE_DOMAIN_SIZE:
+	{
+		ChangeDomainSize((int32_t)mGame.GetDomainSize() + 1);
 		break;
 	}
 	default:

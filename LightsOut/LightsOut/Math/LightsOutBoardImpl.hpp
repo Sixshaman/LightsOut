@@ -82,13 +82,14 @@ public:
 	void SubBoard(const LightsOutNaryBoardImpl* right);
 	void MulBoard(const LightsOutNaryBoardImpl* right);
 
+	void MulBoardNum(uint16_t mul);
 	void SubMulBoard(const LightsOutNaryBoardImpl* right, uint16_t mul);
-
 	void IncDifBoard(const LightsOutNaryBoardImpl* right1, const LightsOutNaryBoardImpl* right2);
 
 	bool IsEqual(const LightsOutNaryBoardImpl* right);
 
 	void Flip() override;
+	void InvertValues();
 
 	bool IsNone() const override;
 

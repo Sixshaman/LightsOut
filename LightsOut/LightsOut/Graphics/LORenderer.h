@@ -40,6 +40,7 @@ public:
 	bool InitD3D(HWND hwnd);
 
 	void ResetBoardSize(uint16_t newSize);
+	void ResetDomainSize(uint16_t newDomainSize);
 	void SetSolutionVisible(bool visible);
 	void SetStabilityVisible(bool visible);
 
