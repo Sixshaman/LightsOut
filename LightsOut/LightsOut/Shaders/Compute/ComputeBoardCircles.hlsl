@@ -1,9 +1,12 @@
+#define FLAG_SHOW_SOLUTION  0x01
+#define FLAG_SHOW_STABILITY 0x02
+
 cbuffer cbParams: register(b0)
 {
 	uint gBoardSize;
 	uint gCellSize;
-	int  gSolutionVisible;
-	int  gStabilityVisible;
+	uint gUnused;
+	uint gFlags;
 
 	float4 gColorNone;
 	float4 gColorEnabled;
@@ -82,7 +85,7 @@ void main(uint3 DTid: SV_DispatchThreadID)
 		}
 
 		[flatten]
-		if(gSolutionVisible) //We are showing the solution
+		if(gFlags & FLAG_SHOW_SOLUTION) //We are showing the solution
 		{
 			bool cellSolved = IsCellActivatedSolution(cellNumber);
 
@@ -98,7 +101,7 @@ void main(uint3 DTid: SV_DispatchThreadID)
 				result = gColorSolved;
 			}
 		}
-		else if (gStabilityVisible)
+		else if (gFlags & FLAG_SHOW_STABILITY)
 		{
 			bool cellStable = IsCellActivatedStability(cellNumber);
 

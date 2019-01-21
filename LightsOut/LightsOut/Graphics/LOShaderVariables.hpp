@@ -14,8 +14,8 @@ struct CS_CBUFFER
 {
 	uint32_t BoardSize;
 	uint32_t CellSize;
-	uint32_t SolveVisible;
-	uint32_t StabilityVisible;
+	uint32_t DomainSize;
+	uint32_t Flags;
 
 	XMFLOAT4 ColorNone;
 	XMFLOAT4 ColorEnabled;
@@ -38,6 +38,7 @@ public:
 
 	static void SetBoardSize(uint32_t boardSize);
 	static void SetCellSize(uint32_t cellSize);
+	static void SetDomainSize(uint32_t domainSize);
 	static void SetSolutionVisible(bool solveVisible);
 	static void SetStabilityVisible(bool stabilityVisible);
 

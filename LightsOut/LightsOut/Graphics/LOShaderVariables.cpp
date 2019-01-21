@@ -3,6 +3,9 @@
 #include "LOTextures.hpp"
 #include "RenderStates.hpp"
 
+#define FLAG_SHOW_SOLUTION  0x01
+#define FLAG_SHOW_STABILITY 0x02
+
 template<typename CBufType>
 inline void UpdateBuffer(ID3D11Buffer *destBuf, CBufType &srcBuf, ID3D11DeviceContext *dc)
 {
@@ -89,14 +92,19 @@ void ComputeBoardVariables::SetCellSize(uint32_t cellSize)
 	mCSCBufferCopy.CellSize = cellSize;
 }
 
+void ComputeBoardVariables::SetDomainSize(uint32_t domainSize)
+{
+	mCSCBufferCopy.DomainSize = domainSize;
+}
+
 void ComputeBoardVariables::SetSolutionVisible(bool solveVisible)
 {
-	mCSCBufferCopy.SolveVisible = solveVisible;
+	mCSCBufferCopy.Flags = (int)solveVisible * (mCSCBufferCopy.Flags | FLAG_SHOW_SOLUTION) + (int)(!solveVisible) * (mCSCBufferCopy.Flags & ~FLAG_SHOW_SOLUTION);
 }
 
 void ComputeBoardVariables::SetStabilityVisible(bool stabilityVisible)
 {
-	mCSCBufferCopy.StabilityVisible = stabilityVisible;
+	mCSCBufferCopy.Flags = (int)stabilityVisible * (mCSCBufferCopy.Flags | FLAG_SHOW_STABILITY) + (int)(!stabilityVisible) * (mCSCBufferCopy.Flags & ~FLAG_SHOW_STABILITY);
 }
 
 void ComputeBoardVariables::SetColorNone(XMVECTOR colorNone)
