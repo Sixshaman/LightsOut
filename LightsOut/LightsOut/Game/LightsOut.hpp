@@ -81,7 +81,7 @@ private:
 
 	void ChangeGameSize(int32_t newSize);
 	void ChangeWorkingMode(WorkingMode newMode);
-	void ChangeCountingMode(CountingMode cntMode);
+	void ChangeCountingMode(CountingMode cntMode, bool stopWhenReturned);
 
 	void SolveCurrentBoard(SolveMode solveMode);
 	void ResetGameBoard(ResetMode resetMode, uint16_t gameSize = 0);

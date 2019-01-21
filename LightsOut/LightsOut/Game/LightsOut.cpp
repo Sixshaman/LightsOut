@@ -12,6 +12,7 @@
 #define IS_EIGVEC_COUNTING      0x10 //Replace the board with the special buffer each tick. After enough ticks you get the eigenvector of the board
 #define IS_PERIO4_COUNTING      0x20 //Replace the board with the solution of the solution of the solution of the solution each tick
 #define IS_PERIOD_BACK_COUNTING 0x40 //Replace the board with the anti-solution each tick
+#define DISPLAY_PERIOD_COUNT    0x80 //Display the period count when counting finished/stopped
 
 #define MENU_THEME_RED_EXPLOSION	  1001
 #define MENU_THEME_NEON_XXL			  1002
@@ -42,6 +43,10 @@
 #define HOTKEY_ID_CLICKMODE_TOROID  1002
 #define HOTKEY_ID_CLICKMODE_CUSTOM  1003
 #define HOTKEY_ID_CLICKMODE_CUSTOR  1004
+
+#define HOTKEY_ID_PERIOD_COUNT      2001
+#define HOTKEY_ID_PERIO4_COUNT      2002
+#define HOTKEY_ID_PERIOD_BACK_COUNT 2003
 
 namespace
 {
@@ -197,6 +202,10 @@ bool LightsOutApp::InitHotkeys()
 	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_CLICKMODE_CUSTOM,  MOD_CONTROL, 'M');
 	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_CLICKMODE_CUSTOR,  MOD_CONTROL, 'O');
 
+	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_PERIOD_COUNT,      MOD_CONTROL, 'V');
+	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_PERIO4_COUNT,      MOD_CONTROL, 'X');
+	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_PERIOD_BACK_COUNT, MOD_CONTROL, 'Z');
+
 	return result;
 }
 
@@ -346,10 +355,13 @@ void LightsOutApp::Update()
 		mRenderer.SetBoardToDraw(mGame.GetBoard());
 	}
 
-	if((mFlags & IS_PERIOD_COUNTING) == 0 && (mFlags & IS_PERIOD_BACK_COUNTING) == 0 && mPeriodCount != 0) //Special state: no period flag is set, but period isn't zero. That means we've counted the period in the previous tick and now we should clean everything
+	if((mFlags & IS_PERIOD_COUNTING) == 0 && (mFlags & IS_PERIOD_BACK_COUNTING) == 0 && (mFlags & IS_PERIO4_COUNTING) == 0 && mPeriodCount != 0) //Special state: no period flag is set, but period isn't zero. That means we've counted the period in the previous tick and now we should clean everything
 	{
-		mCountedBoard.Reset(mGame.GetSize());
-		MessageBox(nullptr, (L"Solution period is " + std::to_wstring(mPeriodCount)).c_str(), L"Soluion period", MB_OK);
+		if(mFlags & DISPLAY_PERIOD_COUNT)
+		{
+			mCountedBoard.Reset(mGame.GetSize());
+			MessageBox(nullptr, (L"Solution period is " + std::to_wstring(mPeriodCount)).c_str(), L"Soluion period", MB_OK);
+		}
 
 		mPeriodCount = 0;
 	}
@@ -364,14 +376,14 @@ void LightsOutApp::Update()
 		mGame.Reset(solution, RESET_FLAG_LEAVE_STABILITY);
 
 		mRenderer.SetBoardToDraw(mGame.GetBoard());
-		if (mFlags & SHOW_STABILITY)
+		if(mFlags & SHOW_STABILITY)
 		{
 			mRenderer.SetStabilityToDraw(mGame.GetStability());
 		}
 
-		if (mCountedBoard == solution)
+		if (mCountedBoard == solution && (mFlags & DISPLAY_PERIOD_COUNT))
 		{
-			mFlags &= ~IS_PERIOD_COUNTING; //Next tick we'll show the messagebox
+			DisableFlags(IS_PERIOD_COUNTING); //Next tick we'll show the messagebox
 		}
 	}
 
@@ -390,20 +402,49 @@ void LightsOutApp::Update()
 			mRenderer.SetStabilityToDraw(mGame.GetStability());
 		}
 
-		if (mCountedBoard == invsolution)
+		if((mFlags & DISPLAY_PERIOD_COUNT) && mCountedBoard == invsolution)
 		{
-			mFlags &= ~IS_PERIOD_BACK_COUNTING; //Next tick we'll show the messagebox
+			DisableFlags(IS_PERIOD_BACK_COUNTING); //Next tick we'll show the messagebox
 		}
 	}
 
-	if (mFlags & IS_PERIO4_COUNTING)
+	if(mFlags & IS_PERIO4_COUNTING)
 	{
 		LightsOutBoard solution = mGame.GetBoard();
 		
+		mPeriodCount++;
 		solution = mSolver.GetSolution(solution, mGame.GetClickRule());
-		solution = mSolver.GetSolution(solution, mGame.GetClickRule());
-		solution = mSolver.GetSolution(solution, mGame.GetClickRule());
-		solution = mSolver.GetSolution(solution, mGame.GetClickRule());
+		if((mFlags & DISPLAY_PERIOD_COUNT) && mCountedBoard == solution)
+		{
+			DisableFlags(IS_PERIO4_COUNTING); //Next tick we'll show the messagebox
+        }
+		else
+		{
+			mPeriodCount++;
+			solution = mSolver.GetSolution(solution, mGame.GetClickRule());
+			if((mFlags & DISPLAY_PERIOD_COUNT) && mCountedBoard == solution)
+			{
+				DisableFlags(IS_PERIO4_COUNTING); //Next tick we'll show the messagebox
+			}
+			else
+			{
+				mPeriodCount++;
+				solution = mSolver.GetSolution(solution, mGame.GetClickRule());
+				if((mFlags & DISPLAY_PERIOD_COUNT) && mCountedBoard == solution)
+				{
+					DisableFlags(IS_PERIO4_COUNTING); //Next tick we'll show the messagebox
+				}
+				else
+				{
+					mPeriodCount++;
+					solution = mSolver.GetSolution(solution, mGame.GetClickRule());
+					if((mFlags & DISPLAY_PERIOD_COUNT) && mCountedBoard == solution)
+					{
+						DisableFlags(IS_PERIO4_COUNTING); //Next tick we'll show the messagebox
+					}
+				}
+			}
+		}
 
 		mGame.Reset(solution, RESET_FLAG_LEAVE_STABILITY);
 		mRenderer.SetBoardToDraw(solution);
@@ -499,7 +540,7 @@ void LightsOutApp::ChangeGameSize(int32_t newSize)
 	ShowSolution(false);
 	ShowStability(false);
 
-	ChangeCountingMode(CountingMode::COUNT_NONE);
+	ChangeCountingMode(CountingMode::COUNT_NONE, false);
 	mEigenvecTurn = PointOnBoard(-1, -1);
 	mTurnList.Clear();
 
@@ -592,36 +633,49 @@ void LightsOutApp::ChangeWorkingMode(WorkingMode newMode)
 	}
 }
 
-void LightsOutApp::ChangeCountingMode(CountingMode cntMode)
+void LightsOutApp::ChangeCountingMode(CountingMode cntMode, bool stopWhenReturned)
 {
 	if (mWorkingMode != WorkingMode::LIT_BOARD)
 	{
 		return;
 	}
 
-	mFlags &= ~IS_PERIO4_COUNTING;
-	mFlags &= ~IS_PERIOD_BACK_COUNTING;
-	mFlags &= ~IS_PERIOD_COUNTING;
+	DisableFlags(IS_PERIOD_COUNTING | IS_PERIO4_COUNTING | IS_PERIOD_BACK_COUNTING);
 
-	mPeriodCount = 0;
 	ShowSolution(false);
 	mTurnList.Clear();
 
 	switch(cntMode)
 	{
 	case CountingMode::COUNT_NONE:
+		if(mFlags & DISPLAY_PERIOD_COUNT && mPeriodCount != 0)
+		{
+			MessageBox(nullptr, (L"Solution period so far is " + std::to_wstring(mPeriodCount)).c_str(), L"Soluion period", MB_OK);
+		}
 		break;
 	case CountingMode::COUNT_SOLUTION_PERIOD:
-		mFlags |= IS_PERIOD_COUNTING;
+		SetFlags(IS_PERIOD_COUNTING);
 		break;
 	case CountingMode::COUNT_SOLUTION_PERIOD_4X:
-		mFlags |= IS_PERIO4_COUNTING;
+		SetFlags(IS_PERIO4_COUNTING);
 		break;
 	case CountingMode::COUNT_INVERSE_SOLUTION_PERIOD:
-		mFlags |= IS_PERIOD_BACK_COUNTING;
+		SetFlags(IS_PERIOD_BACK_COUNTING);
 		break;
 	default:
 		break;
+	}
+
+	mPeriodCount = 0;
+	DisableFlags(DISPLAY_PERIOD_COUNT);
+
+	if(stopWhenReturned)
+	{
+		SetFlags(DISPLAY_PERIOD_COUNT);
+	}
+	else
+	{
+		DisableFlags(DISPLAY_PERIOD_COUNT);
 	}
 
 	if(cntMode == CountingMode::COUNT_NONE)
@@ -1092,19 +1146,19 @@ void LightsOutApp::OnKeyReleased(WPARAM key)
 	case 'V':
 	{
 		const uint32_t countFlags = IS_PERIOD_COUNTING | IS_PERIO4_COUNTING | IS_PERIOD_BACK_COUNTING;
-		ChangeCountingMode(!(mFlags & countFlags) ? CountingMode::COUNT_SOLUTION_PERIOD : CountingMode::COUNT_NONE);
+		ChangeCountingMode(!(mFlags & countFlags) ? CountingMode::COUNT_SOLUTION_PERIOD : CountingMode::COUNT_NONE, false);
 		break;
 	}
 	case 'X':
 	{
 		const uint32_t countFlags = IS_PERIOD_COUNTING | IS_PERIO4_COUNTING | IS_PERIOD_BACK_COUNTING;
-		ChangeCountingMode(!(mFlags & countFlags) ? CountingMode::COUNT_SOLUTION_PERIOD_4X : CountingMode::COUNT_NONE);
+		ChangeCountingMode(!(mFlags & countFlags) ? CountingMode::COUNT_SOLUTION_PERIOD_4X : CountingMode::COUNT_NONE, false);
 		break;
 	}
 	case 'Z':
 	{
 		const uint32_t countFlags = IS_PERIOD_COUNTING | IS_PERIO4_COUNTING | IS_PERIOD_BACK_COUNTING;
-		ChangeCountingMode(!(mFlags & countFlags) ? CountingMode::COUNT_INVERSE_SOLUTION_PERIOD : CountingMode::COUNT_NONE);
+		ChangeCountingMode(!(mFlags & countFlags) ? CountingMode::COUNT_INVERSE_SOLUTION_PERIOD : CountingMode::COUNT_NONE, false);
 		break;
 	}
 	}
@@ -1131,11 +1185,33 @@ void LightsOutApp::OnHotkeyPresed(WPARAM hotkey)
 		}
 		break;
 	case HOTKEY_ID_CLICKMODE_CUSTOM:
+	{
 		ChangeWorkingMode(WorkingMode::CONSTRUCT_CLICKRULE);
 		break;
+	}
 	case HOTKEY_ID_CLICKMODE_CUSTOR:
+	{
 		ChangeWorkingMode(WorkingMode::CONSTRUCT_CLICKRULE_TOROID);
 		break;
+	}
+	case HOTKEY_ID_PERIOD_COUNT:
+	{
+		const uint32_t countFlags = IS_PERIOD_COUNTING | IS_PERIO4_COUNTING | IS_PERIOD_BACK_COUNTING;
+		ChangeCountingMode(!(mFlags & countFlags) ? CountingMode::COUNT_SOLUTION_PERIOD : CountingMode::COUNT_NONE, true);
+		break;
+	}
+	case HOTKEY_ID_PERIO4_COUNT:
+	{
+		const uint32_t countFlags = IS_PERIOD_COUNTING | IS_PERIO4_COUNTING | IS_PERIOD_BACK_COUNTING;
+		ChangeCountingMode(!(mFlags & countFlags) ? CountingMode::COUNT_SOLUTION_PERIOD_4X : CountingMode::COUNT_NONE, true);
+		break;
+	}
+	case HOTKEY_ID_PERIOD_BACK_COUNT:
+	{
+		const uint32_t countFlags = IS_PERIOD_COUNTING | IS_PERIO4_COUNTING | IS_PERIOD_BACK_COUNTING;
+		ChangeCountingMode(!(mFlags & countFlags) ? CountingMode::COUNT_INVERSE_SOLUTION_PERIOD : CountingMode::COUNT_NONE, true);
+		break;
+	}
 	default:
 		break;
 	}
