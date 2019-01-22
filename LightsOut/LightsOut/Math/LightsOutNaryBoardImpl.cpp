@@ -108,7 +108,7 @@ bool LightsOutNaryBoardImpl::IsEqual(const LightsOutNaryBoardImpl* right)
 
 void LightsOutNaryBoardImpl::Flip()
 {
-	for(uint32_t cell: mBoard)
+	for(uint32_t& cell: mBoard)
 	{
 		cell = (cell + 1) % mDomainSize;
 	}
