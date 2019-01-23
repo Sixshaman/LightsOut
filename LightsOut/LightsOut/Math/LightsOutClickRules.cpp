@@ -74,7 +74,7 @@ ClickRuleType LightsOutClickRuleRegular::RuleType() const
 
 //===========================================================================================================
 
-LightsOutClickRuleToroid::LightsOutClickRuleToroid(uint16_t domainSize)
+LightsOutClickRuleToroid::LightsOutClickRuleToroid(uint16_t domainSize): mDomainSize(domainSize)
 {
 }
 
