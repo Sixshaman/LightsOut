@@ -172,5 +172,14 @@
     <FxCompile Include="LightsOut\Shaders\Render\VertexShader.hlsl">
       <Filter>Shaders\Render</Filter>
     </FxCompile>
+    <FxCompile Include="LightsOut\Shaders\Compute\ComputeEveryBoardCircles.hlsl">
+      <Filter>Shaders\Compute</Filter>
+    </FxCompile>
+    <FxCompile Include="LightsOut\Shaders\Compute\ComputeEveryBoardRaindrops.hlsl">
+      <Filter>Shaders\Compute</Filter>
+    </FxCompile>
+    <FxCompile Include="LightsOut\Shaders\Compute\ComputeEveryBoardChains.hlsl">
+      <Filter>Shaders\Compute</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

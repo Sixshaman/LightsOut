@@ -13,7 +13,10 @@ enum class DrawType
 	DRAW_CIRCLES,
 	DRAW_RAINDROPS,
 	DRAW_CHAINS,
-	DRAW_SQUARES_DOMAIN
+	DRAW_SQUARES_DOMAIN,
+	DRAW_CIRCLES_DOMAIN,
+	DRAW_RAINDROPS_DOMAIN,
+	DRAW_CHAINS_DOMAIN
 };
 
 enum class ColorTheme
@@ -49,7 +52,13 @@ public:
 	
 	bool OnWndResize(uint16_t newWidth, uint16_t newHeight);
 
-	void SetDrawType(DrawType drawType);
+	void SetDrawTypeSquares();
+	void SetDrawTypeCircles();
+	void SetDrawTypeRaindrops();
+	void SetDrawTypeChains();
+
+	void SetDrawTypeBinary();
+	void SetDrawTypeDomain();
 
 	void SetBoardToDraw(const LightsOutBoard& board);
 	void SetSolutionToDraw(const LightsOutBoard& board);

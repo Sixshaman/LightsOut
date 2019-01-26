@@ -28,8 +28,8 @@ int32_t InvModGcdex(int32_t x, int32_t domainSize)
 				tCurr = tNext;
 				rCurr = rNext;
 
-				tNext = tPrev - quotR * tNext;
-				rNext = rPrev - quotR * rNext;
+				tNext = tPrev - quotR * tCurr;
+				rNext = rPrev - quotR * rCurr;
 			}
 
 			tCurr = (tCurr + domainSize) % domainSize;

@@ -129,9 +129,9 @@ bool LightsOutApp::InitWnd()
 	mWndWidth = R.right - R.left;
 	mWndHeight = R.bottom - R.top;
 	
-	mWindowTitle = L"Lights out 15x15";
+	mWindowTitle = L"Lights out 15x15 DOMAIN 2";
 
-	mMainWnd = CreateWindow(L"LightsOutWindow", L"Lights out 15x15", wndStyle, 0, 0,
+	mMainWnd = CreateWindow(L"LightsOutWindow", mWindowTitle.c_str(), wndStyle, 0, 0,
 							mWndWidth, mWndHeight, nullptr, nullptr, mAppInst, 0);
 
 	if(!mMainWnd)
@@ -292,22 +292,22 @@ void LightsOutApp::OnMenuItem(WPARAM State)
 	}
 	case MENU_VIEW_SQUARES:
 	{
-		mRenderer.SetDrawType(DrawType::DRAW_SQUARES);
+		mRenderer.SetDrawTypeSquares();
 		break;
 	}
 	case MENU_VIEW_CIRCLES:
 	{
-		mRenderer.SetDrawType(DrawType::DRAW_CIRCLES);
+		mRenderer.SetDrawTypeCircles();
 		break;
 	}
 	case MENU_VIEW_RAINDROPS:
 	{
-		mRenderer.SetDrawType(DrawType::DRAW_RAINDROPS);
+		mRenderer.SetDrawTypeRaindrops();
 		break;
 	}
 	case MENU_VIEW_CHAINS:
 	{
-		mRenderer.SetDrawType(DrawType::DRAW_CHAINS);
+		mRenderer.SetDrawTypeChains();
 		break;
 	}
 	case MENU_VIEW_NO_EDGES:
@@ -557,7 +557,7 @@ void LightsOutApp::ChangeGameSize(int32_t newSize)
 		ResetGameBoard(ResetMode::RESET_SOLVABLE_RANDOM, newSize);
 
 		wchar_t title[50];
-		swprintf_s(title, L"Lights out %dx%d", newSize, newSize);
+		swprintf_s(title, L"Lights out %dx%d DOMAIN %d", newSize, newSize, mGame.GetDomainSize());
 		SetWindowText(mMainWnd, title);
 
 		mWindowTitle = title;
@@ -571,7 +571,7 @@ void LightsOutApp::ChangeGameSize(int32_t newSize)
 		mRenderer.SetBoardToDraw(mGame.GetBoard());
 
 		wchar_t title[50];
-		swprintf_s(title, L"Lights out constructing %dx%d", newSize, newSize);
+		swprintf_s(title, L"Lights out constructing %dx%d DOMAIN", newSize, newSize, mGame.GetDomainSize());
 		SetWindowText(mMainWnd, title);
 
 		mWindowTitle = title;
@@ -620,18 +620,18 @@ void LightsOutApp::ChangeDomainSize(int32_t newDomainSize)
 	mGame.SetClickRuleRegular();
 
 	wchar_t title[50];
-	swprintf_s(title, L"Lights out %dx%d on domain %d", mGame.GetSize(), mGame.GetSize(), newDomainSize);
+	swprintf_s(title, L"Lights out %dx%d DOMAIN %d", mGame.GetSize(), mGame.GetSize(), newDomainSize);
 	SetWindowText(mMainWnd, title);
 
 	mWindowTitle = title;
 	
 	if(newDomainSize == 2)
 	{
-		mRenderer.SetDrawType(DrawType::DRAW_SQUARES);
+		mRenderer.SetDrawTypeBinary();
 	}
 	else
 	{
-		mRenderer.SetDrawType(DrawType::DRAW_SQUARES_DOMAIN);
+		mRenderer.SetDrawTypeDomain();
 	}
 
 	mRenderer.ResetDomainSize(newDomainSize);

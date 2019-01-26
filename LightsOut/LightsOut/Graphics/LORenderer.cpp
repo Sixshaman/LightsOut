@@ -192,9 +192,92 @@ bool LightsOutRenderer::OnWndResize(uint16_t newWidth, uint16_t newHeight)
 	return true;
 }
 
-void LightsOutRenderer::SetDrawType(DrawType drawType)
+void LightsOutRenderer::SetDrawTypeSquares()
 {
-	mDrawType = drawType;
+	if(IsDrawTypeBinary())
+	{
+		mDrawType = DrawType::DRAW_SQUARES;
+	}
+	else if(IsDrawTypeDomain())
+	{
+		mDrawType = DrawType::DRAW_SQUARES_DOMAIN;
+	}
+}
+
+void LightsOutRenderer::SetDrawTypeCircles()
+{
+	if(IsDrawTypeBinary())
+	{
+		mDrawType = DrawType::DRAW_CIRCLES;
+	}
+	else if (IsDrawTypeDomain())
+	{
+		mDrawType = DrawType::DRAW_CIRCLES_DOMAIN;
+	}
+}
+
+void LightsOutRenderer::SetDrawTypeRaindrops()
+{
+	if(IsDrawTypeBinary())
+	{
+		mDrawType = DrawType::DRAW_RAINDROPS;
+	}
+	else if (IsDrawTypeDomain())
+	{
+		mDrawType = DrawType::DRAW_RAINDROPS_DOMAIN;
+	}
+}
+
+void LightsOutRenderer::SetDrawTypeChains()
+{
+	if(IsDrawTypeBinary())
+	{
+		mDrawType = DrawType::DRAW_CHAINS;
+	}
+	else if (IsDrawTypeDomain())
+	{
+		mDrawType = DrawType::DRAW_CHAINS_DOMAIN;
+	}
+}
+
+void LightsOutRenderer::SetDrawTypeBinary()
+{
+	if(IsDrawTypeSquares())
+	{
+		mDrawType = DrawType::DRAW_SQUARES;
+	}
+	else if(IsDrawTypeCircles())
+	{
+		mDrawType = DrawType::DRAW_CIRCLES;
+	}
+	else if(IsDrawTypeRaindrops())
+	{
+		mDrawType = DrawType::DRAW_RAINDROPS;
+	}
+	else if(IsDrawTypeChains())
+	{
+		mDrawType = DrawType::DRAW_CHAINS;
+	}
+}
+
+void LightsOutRenderer::SetDrawTypeDomain()
+{
+	if(IsDrawTypeSquares())
+	{
+		mDrawType = DrawType::DRAW_SQUARES_DOMAIN;
+	}
+	else if(IsDrawTypeCircles())
+	{
+		mDrawType = DrawType::DRAW_CIRCLES_DOMAIN;
+	}
+	else if(IsDrawTypeRaindrops())
+	{
+		mDrawType = DrawType::DRAW_RAINDROPS_DOMAIN;
+	}
+	else if(IsDrawTypeChains())
+	{
+		mDrawType = DrawType::DRAW_CHAINS_DOMAIN;
+	}
 }
 
 void LightsOutRenderer::SetBoardToDraw(const LightsOutBoard& board)
@@ -301,6 +384,15 @@ void LightsOutRenderer::DrawBoardOnTexture(uint16_t cellSize, uint16_t gameSize)
 	case DrawType::DRAW_SQUARES_DOMAIN:
 		ComputeBoardShaders::SetComputeEveryBoardShader(md3dContext.Get());
 		break;
+	case DrawType::DRAW_CIRCLES_DOMAIN:
+		ComputeBoardShaders::SetComputeEveryBoardCirclesShader(md3dContext.Get());
+		break;
+	case DrawType::DRAW_RAINDROPS_DOMAIN:
+		ComputeBoardShaders::SetComputeEveryBoardRaindropsShader(md3dContext.Get());
+		break;
+	case DrawType::DRAW_CHAINS_DOMAIN:
+		ComputeBoardShaders::SetComputeEveryBoardChainsShader(md3dContext.Get());
+		break;
 	default:
 		ComputeBoardShaders::SetComputeBoardShader(md3dContext.Get());
 		break;
@@ -344,7 +436,7 @@ bool LightsOutRenderer::IsDrawTypeBinary()
 
 bool LightsOutRenderer::IsDrawTypeDomain()
 {
-	return mDrawType == DrawType::DRAW_SQUARES_DOMAIN;
+	return (mDrawType == DrawType::DRAW_SQUARES_DOMAIN) || (mDrawType == DrawType::DRAW_CIRCLES_DOMAIN) || (mDrawType == DrawType::DRAW_RAINDROPS_DOMAIN) || (mDrawType == DrawType::DRAW_CHAINS_DOMAIN);
 }
 
 bool LightsOutRenderer::IsDrawTypeSquares()
@@ -354,17 +446,17 @@ bool LightsOutRenderer::IsDrawTypeSquares()
 
 bool LightsOutRenderer::IsDrawTypeCircles()
 {
-	return mDrawType == DrawType::DRAW_CIRCLES;
+	return (mDrawType == DrawType::DRAW_CIRCLES) || (mDrawType == DrawType::DRAW_CIRCLES_DOMAIN);
 }
 
 bool LightsOutRenderer::IsDrawTypeRaindrops()
 {
-	return mDrawType == DrawType::DRAW_RAINDROPS;
+	return (mDrawType == DrawType::DRAW_RAINDROPS) || (mDrawType == DrawType::DRAW_RAINDROPS_DOMAIN);
 }
 
 bool LightsOutRenderer::IsDrawTypeChains()
 {
-	return mDrawType == DrawType::DRAW_CHAINS;
+	return (mDrawType == DrawType::DRAW_CHAINS) || (mDrawType == DrawType::DRAW_CHAINS_DOMAIN);
 }
 
 void LightsOutRenderer::DrawBoard(uint16_t cellSize, uint16_t gameSize)

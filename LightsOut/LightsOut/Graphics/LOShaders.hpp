@@ -41,6 +41,9 @@ public:
 	static void SetComputeBoardRaindropsShader(ID3D11DeviceContext *dc);
 	static void SetComputeBoardChainsShader(ID3D11DeviceContext *dc);
 	static void SetComputeEveryBoardShader(ID3D11DeviceContext *dc);
+	static void SetComputeEveryBoardCirclesShader(ID3D11DeviceContext *dc);
+	static void SetComputeEveryBoardRaindropsShader(ID3D11DeviceContext *dc);
+	static void SetComputeEveryBoardChainsShader(ID3D11DeviceContext *dc);
 
 private:
 	static ID3D11ComputeShader* mComputeBoardShader;
@@ -48,6 +51,9 @@ private:
 	static ID3D11ComputeShader* mComputeBoardRaindopsShader;
 	static ID3D11ComputeShader* mComputeBoardChainsShader;
 	static ID3D11ComputeShader* mComputeEveryBoardShader;
+	static ID3D11ComputeShader* mComputeEveryBoardCirclesShader;
+	static ID3D11ComputeShader* mComputeEveryBoardRaindropsShader;
+	static ID3D11ComputeShader* mComputeEveryBoardChainsShader;
 };
 
 #pragma endregion ComputeBoard
