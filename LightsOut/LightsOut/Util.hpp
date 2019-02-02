@@ -4,6 +4,7 @@
 #include <tchar.h>
 #include <DirectXMath.h>
 #include <Windows.h>
+#include <string>
 
 /*
 * Some utilites
@@ -30,7 +31,29 @@ inline void ShowErrorMessage(LPWSTR file, int line)
 	MessageBox(nullptr, errorMsg, L"Error!", MB_OK);
 }
 
-#define ASSERT_ERR(X) {if(FAILED(X)) {ShowErrorMessage(_T(__FILE__), __LINE__); return false;}}
+class DXException
+{
+public:
+	DXException(HRESULT hr,	const std::wstring& funcName, const std::wstring& filename, int32_t line);
+	std::wstring ToString() const;
+
+private:
+	HRESULT      mErrorCode;
+	std::wstring mFuncName;
+	std::wstring mFilename;
+	int32_t      mLineNumber;
+};
+
+#ifndef ThrowIfFailed
+#define ThrowIfFailed(x)                                   \
+{                                                          \
+	HRESULT __hr = (x);                                    \
+	if(FAILED(__hr))                                       \
+	{                                                      \
+		throw DXException(__hr, L#x, __FILEW__, __LINE__); \
+	}                                                      \
+}
+#endif
 
 #define EXPECTED_WND_SIZE 900.0f //Approximate size of window
 

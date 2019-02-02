@@ -21,65 +21,79 @@ inline void UpdateBuffer(ID3D11Buffer *destBuf, CBufType &srcBuf, ID3D11DeviceCo
 
 #pragma region ComputeBoard
 
-ID3D11Buffer* ComputeBoardVariables::mCSCbuffer = nullptr;
-
-CS_CBUFFER ComputeBoardVariables::mCSCBufferCopy = {};
-
 void ComputeBoardVariables::UpdateCSCBuffer(ID3D11DeviceContext *dc)
 {
-	UpdateBuffer(mCSCbuffer, mCSCBufferCopy, dc);
+	UpdateBuffer(mCSCbuffer.Get(), mCSCBufferCopy, dc);
 }
 
-bool ComputeBoardVariables::InitAll(ID3D11Device *device)
+ComputeBoardVariables::ComputeBoardVariables(ID3D11Device *device): mBoardSrv(nullptr), mSolutionSrv(nullptr), mStabilitySrv(nullptr), mResultUav(nullptr)
 {
 	ZeroMemory(&mCSCBufferCopy, sizeof(CS_CBUFFER));
 
 	D3D11_BUFFER_DESC cBuffer;
-	cBuffer.ByteWidth = sizeof(CS_CBUFFER);
-	cBuffer.Usage = D3D11_USAGE_DYNAMIC;
-	cBuffer.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	cBuffer.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	cBuffer.MiscFlags = 0;
+	cBuffer.ByteWidth           = sizeof(CS_CBUFFER);
+	cBuffer.Usage               = D3D11_USAGE_DYNAMIC;
+	cBuffer.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
+	cBuffer.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
+	cBuffer.MiscFlags           = 0;
 	cBuffer.StructureByteStride = 0;
 
 	D3D11_SUBRESOURCE_DATA cbInitData;
-	cbInitData.pSysMem = &mCSCBufferCopy;
-	cbInitData.SysMemPitch = 0;
+	cbInitData.pSysMem          = &mCSCBufferCopy;
+	cbInitData.SysMemPitch      = 0;
 	cbInitData.SysMemSlicePitch = 0;
 
-	ASSERT_ERR(device->CreateBuffer(&cBuffer, &cbInitData, &mCSCbuffer));
-
-	return true;
+	ThrowIfFailed(device->CreateBuffer(&cBuffer, &cbInitData, mCSCbuffer.GetAddressOf()));
 }
 
-void ComputeBoardVariables::DestroyAll()
+ComputeBoardVariables::~ComputeBoardVariables()
 {
-	SafeRelease(mCSCbuffer);
 }
 
 void ComputeBoardVariables::SetCSVariables(ID3D11DeviceContext *dc)
 {
 	UpdateCSCBuffer(dc);
 
-	dc->CSSetConstantBuffers(0, 1, &mCSCbuffer);
+	ID3D11Buffer* cbuffers[] = {mCSCbuffer.Get()};
+	dc->CSSetConstantBuffers(0, 1, cbuffers);
 
-	ID3D11ShaderResourceView *SRVs[3] = {LOTextures::BoardSRV(), LOTextures::SolutionSRV(), LOTextures::StabilitySRV()};
+	ID3D11ShaderResourceView *SRVs[3] = {mBoardSrv, mSolutionSrv, mStabilitySrv};
 	dc->CSSetShaderResources(0, 3, SRVs);
 
-	ID3D11UnorderedAccessView *UAVs[1] = {LOTextures::ResultUAV()};
+	ID3D11UnorderedAccessView *UAVs[1] = {mResultUav};
 	dc->CSSetUnorderedAccessViews(0, 1, UAVs, nullptr);
 }
 
 void ComputeBoardVariables::DisableVariables(ID3D11DeviceContext *dc)
 {
-	ID3D11Buffer* nullcbuffer = {nullptr};
-	dc->CSSetConstantBuffers(0, 1, &nullcbuffer);
+	ID3D11Buffer* nullcbuffer[] = {nullptr};
+	dc->CSSetConstantBuffers(0, 1, nullcbuffer);
 
 	ID3D11ShaderResourceView *nullsrv[3] = {nullptr, nullptr, nullptr};
 	dc->CSSetShaderResources(0, 3, nullsrv);
 
 	ID3D11UnorderedAccessView *nulluav[1] = {nullptr};
 	dc->CSSetUnorderedAccessViews(0, 1, nulluav, nullptr);
+}
+
+void ComputeBoardVariables::SetBoardSrv(ID3D11ShaderResourceView* srv)
+{
+	mBoardSrv = srv;
+}
+
+void ComputeBoardVariables::SetSolutionSrv(ID3D11ShaderResourceView* srv)
+{
+	mSolutionSrv = srv;
+}
+
+void ComputeBoardVariables::SetStabilitySrv(ID3D11ShaderResourceView* srv)
+{
+	mStabilitySrv = srv;
+}
+
+void ComputeBoardVariables::SetResultUav(ID3D11UnorderedAccessView* uav)
+{
+	mResultUav = uav;
 }
 
 void ComputeBoardVariables::SetBoardSize(uint32_t boardSize)
@@ -107,22 +121,22 @@ void ComputeBoardVariables::SetStabilityVisible(bool stabilityVisible)
 	mCSCBufferCopy.Flags = (int)stabilityVisible * (mCSCBufferCopy.Flags | FLAG_SHOW_STABILITY) + (int)(!stabilityVisible) * (mCSCBufferCopy.Flags & ~FLAG_SHOW_STABILITY);
 }
 
-void ComputeBoardVariables::SetColorNone(XMVECTOR colorNone)
+void ComputeBoardVariables::SetColorNone(DirectX::XMVECTOR colorNone)
 {
 	DirectX::XMStoreFloat4(&mCSCBufferCopy.ColorNone, colorNone);
 }
 
-void ComputeBoardVariables::SetColorEnabled(XMVECTOR colorEnabled)
+void ComputeBoardVariables::SetColorEnabled(DirectX::XMVECTOR colorEnabled)
 {
 	DirectX::XMStoreFloat4(&mCSCBufferCopy.ColorEnabled,colorEnabled);
 }
 
-void ComputeBoardVariables::SetColorSolved(XMVECTOR colorSolved)
+void ComputeBoardVariables::SetColorSolved(DirectX::XMVECTOR colorSolved)
 {
 	DirectX::XMStoreFloat4(&mCSCBufferCopy.ColorSolved, colorSolved);
 }
 
-void ComputeBoardVariables::SetColorBetween(XMVECTOR colorBetween)
+void ComputeBoardVariables::SetColorBetween(DirectX::XMVECTOR colorBetween)
 {
 	DirectX::XMStoreFloat4(&mCSCBufferCopy.ColorBetween, colorBetween);
 }
@@ -144,10 +158,10 @@ void ComputeBoardVariables::SetColorBetweenAsSolved()
 
 void ComputeBoardVariables::SetColorBetweenAsDimmed()
 {
-	XMVECTOR unlitColor    = DirectX::XMLoadFloat4(&mCSCBufferCopy.ColorNone);
-	XMVECTOR invUnlitColor = DirectX::XMVectorSubtract(DirectX::XMVectorSplatOne(), unlitColor);
+	DirectX::XMVECTOR unlitColor    = DirectX::XMLoadFloat4(&mCSCBufferCopy.ColorNone);
+	DirectX::XMVECTOR invUnlitColor = DirectX::XMVectorSubtract(DirectX::XMVectorSplatOne(), unlitColor);
 
-	XMVECTOR halfLit = DirectX::XMVectorScale(DirectX::XMVectorAbs(DirectX::XMVectorSubtract(invUnlitColor, unlitColor)), 0.5f);
+	DirectX::XMVECTOR halfLit = DirectX::XMVectorScale(DirectX::XMVectorAbs(DirectX::XMVectorSubtract(invUnlitColor, unlitColor)), 0.5f);
 
 	DirectX::XMStoreFloat4(&mCSCBufferCopy.ColorBetween, halfLit);
 }
@@ -156,22 +170,21 @@ void ComputeBoardVariables::SetColorBetweenAsDimmed()
 
 #pragma region DrawScreen
 
-bool DrawScreenVariables::InitAll(ID3D11Device *device)
+DrawScreenVariables::DrawScreenVariables(ID3D11Device *device): mTextureSamplerState(nullptr), mBoardTextureSrv(nullptr)
 {
-	return true;
 }
 
-void DrawScreenVariables::DestroyAll()
+DrawScreenVariables::~DrawScreenVariables()
 {
 }
 
 void DrawScreenVariables::SetAllVariables(ID3D11DeviceContext *dc)
 {
-	ID3D11ShaderResourceView* targetTex = LOTextures::ResultSRV();
-	dc->PSSetShaderResources(0, 1, &targetTex);
+	ID3D11ShaderResourceView* targetTex[] = {mBoardTextureSrv};
+	dc->PSSetShaderResources(0, 1, targetTex);
 
-	ID3D11SamplerState* TextureSS = RenderStates::TextureSS();
-	dc->PSSetSamplers(0, 1, &TextureSS);
+	ID3D11SamplerState* TextureSS[] = {mTextureSamplerState};
+	dc->PSSetSamplers(0, 1, TextureSS);
 }
 
 void DrawScreenVariables::DisableVariables(ID3D11DeviceContext* dc)
@@ -181,6 +194,16 @@ void DrawScreenVariables::DisableVariables(ID3D11DeviceContext* dc)
 
 	ID3D11SamplerState *nullsampler[1] = {nullptr};
 	dc->PSSetSamplers(0, 1, nullsampler);
+}
+
+void DrawScreenVariables::SetBoardTexture(ID3D11ShaderResourceView* boardTexture)
+{
+	mBoardTextureSrv = boardTexture;
+}
+
+void DrawScreenVariables::SetSamplerState(ID3D11SamplerState* samplerState)
+{
+	mTextureSamplerState = samplerState;
 }
 
 #pragma endregion DrawScreen

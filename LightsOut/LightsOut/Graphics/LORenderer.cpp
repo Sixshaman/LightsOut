@@ -1,27 +1,10 @@
 #include "LORenderer.h"
 #include "RenderStates.hpp"
 #include <DirectXColors.h>
-#include "LOShaders.hpp"
 #include "LOTextures.hpp"
-#include "LOShaderVariables.hpp"
 #include "..\Util.hpp"
 
-LightsOutRenderer::LightsOutRenderer()
-{
-	mDrawType = DrawType::DRAW_SQUARES;
-}
-
-LightsOutRenderer::~LightsOutRenderer()
-{
-	DrawScreenShaders::DestroyAll();
-	DrawScreenVariables::DestroyAll();
-	ComputeBoardShaders::DestroyAll();
-	ComputeBoardVariables::DestroyAll();
-	RenderStates::DestroyAll();
-	LOTextures::DestroyAll();
-}
-
-bool LightsOutRenderer::InitD3D(HWND hwnd)
+LightsOutRenderer::LightsOutRenderer(HWND hwnd): mDrawType(DrawType::DRAW_SQUARES)
 {
 	uint32_t flags = 0;
 	D3D_FEATURE_LEVEL featurelvl;
@@ -52,84 +35,58 @@ bool LightsOutRenderer::InitD3D(HWND hwnd)
 	scDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 	scDesc.Flags = 0;
 
-	HRESULT hr = D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, flags, nullptr, 0, D3D11_SDK_VERSION,
-		                                       &scDesc, &mSwapChain, &md3dDevice, &featurelvl, &md3dContext);
-
-	if (FAILED(hr))
-	{
-		MessageBox(nullptr, L"D3D11 device creation error!", L"Error", MB_ICONERROR | MB_OK);
-		return false;
-	}
+	ThrowIfFailed(D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, flags, nullptr, 0, D3D11_SDK_VERSION,
+		                                        &scDesc, &mSwapChain, &md3dDevice, &featurelvl, &md3dContext));
 
 	if (featurelvl < D3D_FEATURE_LEVEL_11_0)
 	{
 		MessageBox(nullptr, L"D3D11 is not supported!", L"Error", MB_ICONERROR | MB_OK);
-		return false;
 	}
 
-	if (!OnWndResize(wndWidth, wndHeight))
-	{
-		return false;
-	}
+	OnWndResize(wndWidth, wndHeight);
 
-	if (!DrawScreenShaders::InitAll(md3dDevice.Get()))
-	{
-		return false;
-	}
+	mDrawScreenShaders   = std::make_unique<DrawScreenShaders>(md3dDevice.Get());
+	mComputeBoardShaders = std::make_unique<ComputeBoardShaders>(md3dDevice.Get());
 
-	if (!ComputeBoardShaders::InitAll(md3dDevice.Get()))
-	{
-		return false;
-	}
+	mComputeBoardVariables = std::make_unique<ComputeBoardVariables>(md3dDevice.Get());
+	mDrawScreenVariables   = std::make_unique<DrawScreenVariables>(md3dDevice.Get());
 
-	if (!DrawScreenVariables::InitAll(md3dDevice.Get()))
-	{
-		return false;
-	}
+	mRenderStates = std::make_unique<RenderStates>(md3dDevice.Get());
+	mTextures     = std::make_unique<LOTextures>(md3dDevice.Get());
 
-	if (!ComputeBoardVariables::InitAll(md3dDevice.Get()))
-	{
-		return false;
-	}
-
-	if (!RenderStates::InitAll(md3dDevice.Get()))
-	{
-		return false;
-	}
-
-	if (!LOTextures::InitSRVs(md3dDevice.Get()))
-	{
-		return false;
-	}
+	mDrawScreenVariables->SetSamplerState(mRenderStates->TexturePointSamplerState());
+	mDrawScreenVariables->SetBoardTexture(mTextures->ResultSRV());
 
 	SetColorTheme(ColorTheme::NEON_XXL);
-	EdgeColorAsUnlit();
+	EdgeColorAsUnlit();	
+}
 
-	return true;
+LightsOutRenderer::~LightsOutRenderer()
+{
 }
 
 void LightsOutRenderer::ResetBoardSize(uint16_t newSize)
 {
 	uint32_t cellSize = (uint32_t)(ceilf(EXPECTED_WND_SIZE / newSize) - 1);
-	ComputeBoardVariables::SetCellSize(cellSize);
+	mComputeBoardVariables->SetCellSize(cellSize);
 
-	ComputeBoardVariables::SetBoardSize(newSize);
-	LOTextures::ResizeBoard(newSize, cellSize, md3dDevice.Get());
+	mComputeBoardVariables->SetBoardSize(newSize);
+	mTextures->ResizeBoard(newSize, cellSize, md3dDevice.Get());
 }
 
 void LightsOutRenderer::ResetDomainSize(uint16_t newDomainSize)
 {
-	ComputeBoardVariables::SetDomainSize(newDomainSize);
+	mComputeBoardVariables->SetDomainSize(newDomainSize);
 }
 
 void LightsOutRenderer::SetSolutionVisible(bool visible)
 {
-	ComputeBoardVariables::SetSolutionVisible(visible);
+	mComputeBoardVariables->SetSolutionVisible(visible);
 }
 
 void LightsOutRenderer::SetStabilityVisible(bool visible)
 {
-	ComputeBoardVariables::SetStabilityVisible(visible);
+	mComputeBoardVariables->SetStabilityVisible(visible);
 }
 
 bool LightsOutRenderer::OnWndResize(uint16_t newWidth, uint16_t newHeight)
@@ -137,20 +94,11 @@ bool LightsOutRenderer::OnWndResize(uint16_t newWidth, uint16_t newHeight)
 	mRenderTarget.Reset();
 	mDepthStencilView.Reset();
 
-	if(FAILED(mSwapChain->ResizeBuffers(1, newWidth, newHeight, DXGI_FORMAT_R8G8B8A8_UNORM, 0)))
-	{
-		MessageBox(nullptr, L"Buffers resizing error", L"Error", MB_ICONERROR | MB_OK);
-		return false;
-	}
+	ThrowIfFailed(mSwapChain->ResizeBuffers(1, newWidth, newHeight, DXGI_FORMAT_R8G8B8A8_UNORM, 0));
 
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> backBuffer;
 	mSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(backBuffer.GetAddressOf()));
-
-	if (FAILED(md3dDevice->CreateRenderTargetView(backBuffer.Get(), NULL, mRenderTarget.GetAddressOf())))
-	{
-		MessageBox(nullptr, L"Render target creation error!", L"Error", MB_ICONERROR | MB_OK);
-		return false;
-	}
+	ThrowIfFailed(md3dDevice->CreateRenderTargetView(backBuffer.Get(), NULL, mRenderTarget.GetAddressOf()));
 
 	D3D11_TEXTURE2D_DESC depthStencilBufferDesc;
 	depthStencilBufferDesc.Width = newWidth;
@@ -165,17 +113,9 @@ bool LightsOutRenderer::OnWndResize(uint16_t newWidth, uint16_t newHeight)
 	depthStencilBufferDesc.CPUAccessFlags = 0;
 	depthStencilBufferDesc.MiscFlags = 0;
 
-	ID3D11Texture2D *depthStencilBuffer = nullptr;
-	if (FAILED(md3dDevice->CreateTexture2D(&depthStencilBufferDesc, nullptr, &depthStencilBuffer)))
-	{
-		MessageBox(nullptr, L"Depth buffer creation error!", L"Error", MB_ICONERROR | MB_OK);
-		return false;
-	}
-	if (FAILED(md3dDevice->CreateDepthStencilView(depthStencilBuffer, nullptr, &mDepthStencilView)))
-	{
-		MessageBox(nullptr, L"Depth/stencil view creation error!", L"Error", MB_ICONERROR | MB_OK);
-		return false;
-	}
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> depthStencilBuffer;
+	ThrowIfFailed(md3dDevice->CreateTexture2D(&depthStencilBufferDesc, nullptr, depthStencilBuffer.GetAddressOf()));
+	ThrowIfFailed(md3dDevice->CreateDepthStencilView(depthStencilBuffer.Get(), nullptr, mDepthStencilView.GetAddressOf()));
 
 	ID3D11RenderTargetView* renderTargets[] = {mRenderTarget.Get()};
 	md3dContext->OMSetRenderTargets(1, renderTargets, mDepthStencilView.Get());
@@ -216,6 +156,18 @@ void LightsOutRenderer::SetDrawTypeCircles()
 	}
 }
 
+void LightsOutRenderer::SetDrawTypeDiamonds()
+{
+	if(IsDrawTypeBinary())
+	{
+		mDrawType = DrawType::DRAW_DIAMONDS;
+	}
+	else if (IsDrawTypeDomain())
+	{
+		mDrawType = DrawType::DRAW_DIAMONDS_DOMAIN;
+	}
+}
+
 void LightsOutRenderer::SetDrawTypeRaindrops()
 {
 	if(IsDrawTypeBinary())
@@ -250,6 +202,10 @@ void LightsOutRenderer::SetDrawTypeBinary()
 	{
 		mDrawType = DrawType::DRAW_CIRCLES;
 	}
+	else if(IsDrawTypeDiamonds())
+	{
+		mDrawType = DrawType::DRAW_DIAMONDS;
+	}
 	else if(IsDrawTypeRaindrops())
 	{
 		mDrawType = DrawType::DRAW_RAINDROPS;
@@ -270,6 +226,10 @@ void LightsOutRenderer::SetDrawTypeDomain()
 	{
 		mDrawType = DrawType::DRAW_CIRCLES_DOMAIN;
 	}
+	else if(IsDrawTypeDiamonds())
+	{
+		mDrawType = DrawType::DRAW_DIAMONDS_DOMAIN;
+	}
 	else if(IsDrawTypeRaindrops())
 	{
 		mDrawType = DrawType::DRAW_RAINDROPS_DOMAIN;
@@ -282,17 +242,17 @@ void LightsOutRenderer::SetDrawTypeDomain()
 
 void LightsOutRenderer::SetBoardToDraw(const LightsOutBoard& board)
 {
-	LOTextures::UpdateBoard(board, md3dContext.Get());
+	mTextures->UpdateBoard(board, md3dContext.Get());
 }
 
 void LightsOutRenderer::SetSolutionToDraw(const LightsOutBoard& solution)
 {
-	LOTextures::UpdateSolution(solution, md3dContext.Get());
+	mTextures->UpdateSolution(solution, md3dContext.Get());
 }
 
 void LightsOutRenderer::SetStabilityToDraw(const LightsOutBoard& stability)
 {
-	LOTextures::UpdateStability(stability, md3dContext.Get());
+	mTextures->UpdateStability(stability, md3dContext.Get());
 }
 
 void LightsOutRenderer::SetColorTheme(ColorTheme colorTheme)
@@ -300,34 +260,39 @@ void LightsOutRenderer::SetColorTheme(ColorTheme colorTheme)
 	switch (colorTheme)
 	{
 	case ColorTheme::RED_EXPLOSION:
-		ComputeBoardVariables::SetColorSolved(DirectX::Colors::Red);
-		ComputeBoardVariables::SetColorEnabled(DirectX::Colors::Crimson);
-		ComputeBoardVariables::SetColorNone(DirectX::Colors::Salmon);
+		mComputeBoardVariables->SetColorSolved(DirectX::Colors::Red);
+		mComputeBoardVariables->SetColorEnabled(DirectX::Colors::Crimson);
+		mComputeBoardVariables->SetColorNone(DirectX::Colors::Salmon);
 		break;
 	case ColorTheme::NEON_XXL:
-		ComputeBoardVariables::SetColorSolved(DirectX::Colors::Blue);
-		ComputeBoardVariables::SetColorEnabled(DirectX::Colors::Lime);
-		ComputeBoardVariables::SetColorNone(DirectX::Colors::Black);
+		mComputeBoardVariables->SetColorSolved(DirectX::Colors::Blue);
+		mComputeBoardVariables->SetColorEnabled(DirectX::Colors::Lime);
+		mComputeBoardVariables->SetColorNone(DirectX::Colors::Black);
+		break;
+	case ColorTheme::AUTUMM:
+		mComputeBoardVariables->SetColorSolved(DirectX::Colors::ForestGreen);
+		mComputeBoardVariables->SetColorEnabled(DirectX::Colors::Yellow);
+		mComputeBoardVariables->SetColorNone(DirectX::Colors::Black);
 		break;
 	case ColorTheme::CREAMED_STRAWBERRY:
-		ComputeBoardVariables::SetColorSolved(DirectX::Colors::Chocolate);
-		ComputeBoardVariables::SetColorEnabled(DirectX::Colors::HotPink);
-		ComputeBoardVariables::SetColorNone(DirectX::Colors::Bisque);
+		mComputeBoardVariables->SetColorSolved(DirectX::Colors::Chocolate);
+		mComputeBoardVariables->SetColorEnabled(DirectX::Colors::HotPink);
+		mComputeBoardVariables->SetColorNone(DirectX::Colors::Bisque);
 		break;
 	case ColorTheme::HARD_TO_SEE:
-		ComputeBoardVariables::SetColorSolved(DirectX::Colors::MidnightBlue);
-		ComputeBoardVariables::SetColorEnabled(DirectX::Colors::Navy);
-		ComputeBoardVariables::SetColorNone(DirectX::Colors::DarkBlue);
+		mComputeBoardVariables->SetColorSolved(DirectX::Colors::MidnightBlue);
+		mComputeBoardVariables->SetColorEnabled(DirectX::Colors::Navy);
+		mComputeBoardVariables->SetColorNone(DirectX::Colors::DarkBlue);
 		break;
 	case ColorTheme::BLACK_AND_WHITE:
-		ComputeBoardVariables::SetColorSolved(DirectX::Colors::DimGray);
-		ComputeBoardVariables::SetColorEnabled(DirectX::Colors::White);
-		ComputeBoardVariables::SetColorNone(DirectX::Colors::Black);
+		mComputeBoardVariables->SetColorSolved(DirectX::Colors::DimGray);
+		mComputeBoardVariables->SetColorEnabled(DirectX::Colors::White);
+		mComputeBoardVariables->SetColorNone(DirectX::Colors::Black);
 		break;
 	case ColorTheme::PETYA:
-		ComputeBoardVariables::SetColorSolved(DirectX::XMVectorSet(0.639f, 0.694f, 0.745f, 1.0f));
-		ComputeBoardVariables::SetColorEnabled(DirectX::XMVectorSet(0.980f, 0.984f, 0.988f, 1.0f));
-		ComputeBoardVariables::SetColorNone(DirectX::XMVectorSet(0.459f, 0.733f, 0.992f, 1.0f));
+		mComputeBoardVariables->SetColorSolved(DirectX::XMVectorSet(0.639f, 0.694f, 0.745f, 1.0f));
+		mComputeBoardVariables->SetColorEnabled(DirectX::XMVectorSet(0.980f, 0.984f, 0.988f, 1.0f));
+		mComputeBoardVariables->SetColorNone(DirectX::XMVectorSet(0.459f, 0.733f, 0.992f, 1.0f));
 		break;
 	default:
 		break;
@@ -336,65 +301,76 @@ void LightsOutRenderer::SetColorTheme(ColorTheme colorTheme)
 
 void LightsOutRenderer::EdgeColorAsUnlit()
 {
-	ComputeBoardVariables::SetColorBetweenAsNone();
+	mComputeBoardVariables->SetColorBetweenAsNone();
 }
 
 void LightsOutRenderer::EdgeColorAsLit()
 {
-	ComputeBoardVariables::SetColorBetweenAsEnabled();
+	mComputeBoardVariables->SetColorBetweenAsEnabled();
 }
 
 void LightsOutRenderer::EdgeColorAsSolution()
 {
-	ComputeBoardVariables::SetColorBetweenAsSolved();
+	mComputeBoardVariables->SetColorBetweenAsSolved();
 }
 
 void LightsOutRenderer::EdgeColorDimmed()
 {
-	ComputeBoardVariables::SetColorBetweenAsDimmed();
+	mComputeBoardVariables->SetColorBetweenAsDimmed();
 }
 
 void LightsOutRenderer::DrawBoardOnTexture(uint16_t cellSize, uint16_t gameSize)
 {
 	FLOAT clearColor[4] = {0.0f, 0.0f, 0.0f, 1.0f};
 
-	md3dContext->ClearUnorderedAccessViewFloat(LOTextures::ResultUAV(), clearColor);
+	md3dContext->ClearUnorderedAccessViewFloat(mTextures->ResultUAV(), clearColor);
 
 	//--------------------------------------------------------------------------------------------------------------------------
 	//----------------------------------------------Draw the board on the off-screen texture------------------------------------
 	//--------------------------------------------------------------------------------------------------------------------------
 
-	ComputeBoardVariables::UpdateCSCBuffer(md3dContext.Get());
-	ComputeBoardVariables::SetCSVariables(md3dContext.Get());
+	mComputeBoardVariables->SetBoardSrv(mTextures->BoardSRV());
+	mComputeBoardVariables->SetSolutionSrv(mTextures->SolutionSRV());
+	mComputeBoardVariables->SetStabilitySrv(mTextures->StabilitySRV());
+
+	mComputeBoardVariables->SetResultUav(mTextures->ResultUAV());
+
+	mComputeBoardVariables->SetCSVariables(md3dContext.Get());
 
 	switch (mDrawType)
 	{
 	case DrawType::DRAW_SQUARES:
-		ComputeBoardShaders::SetComputeBoardShader(md3dContext.Get());
+		mComputeBoardShaders->SetComputeBoardShader(md3dContext.Get());
 		break;
 	case DrawType::DRAW_CIRCLES:
-		ComputeBoardShaders::SetComputeBoardCirclesShader(md3dContext.Get());
+		mComputeBoardShaders->SetComputeBoardCirclesShader(md3dContext.Get());
+		break;
+	case DrawType::DRAW_DIAMONDS:
+		mComputeBoardShaders->SetComputeBoardDiamondsShader(md3dContext.Get());
 		break;
 	case DrawType::DRAW_RAINDROPS:
-		ComputeBoardShaders::SetComputeBoardRaindropsShader(md3dContext.Get());
+		mComputeBoardShaders->SetComputeBoardRaindropsShader(md3dContext.Get());
 		break;
 	case DrawType::DRAW_CHAINS:
-		ComputeBoardShaders::SetComputeBoardChainsShader(md3dContext.Get());
+		mComputeBoardShaders->SetComputeBoardChainsShader(md3dContext.Get());
 		break;
 	case DrawType::DRAW_SQUARES_DOMAIN:
-		ComputeBoardShaders::SetComputeEveryBoardShader(md3dContext.Get());
+		mComputeBoardShaders->SetComputeEveryBoardShader(md3dContext.Get());
 		break;
 	case DrawType::DRAW_CIRCLES_DOMAIN:
-		ComputeBoardShaders::SetComputeEveryBoardCirclesShader(md3dContext.Get());
+		mComputeBoardShaders->SetComputeEveryBoardCirclesShader(md3dContext.Get());
+		break;
+	case DrawType::DRAW_DIAMONDS_DOMAIN:
+		mComputeBoardShaders->SetComputeEveryBoardDiamondsShader(md3dContext.Get());
 		break;
 	case DrawType::DRAW_RAINDROPS_DOMAIN:
-		ComputeBoardShaders::SetComputeEveryBoardRaindropsShader(md3dContext.Get());
+		mComputeBoardShaders->SetComputeEveryBoardRaindropsShader(md3dContext.Get());
 		break;
 	case DrawType::DRAW_CHAINS_DOMAIN:
-		ComputeBoardShaders::SetComputeEveryBoardChainsShader(md3dContext.Get());
+		mComputeBoardShaders->SetComputeEveryBoardChainsShader(md3dContext.Get());
 		break;
 	default:
-		ComputeBoardShaders::SetComputeBoardShader(md3dContext.Get());
+		mComputeBoardShaders->SetComputeBoardShader(md3dContext.Get());
 		break;
 	}
 
@@ -402,8 +378,8 @@ void LightsOutRenderer::DrawBoardOnTexture(uint16_t cellSize, uint16_t gameSize)
 		                  (uint32_t)ceilf(gameSize * (cellSize / 16.0f)),
 		                  1);
 
-	ComputeBoardVariables::DisableVariables(md3dContext.Get());
-	ShaderBinder::UnbindComputeShader(md3dContext.Get());
+	mComputeBoardVariables->DisableVariables(md3dContext.Get());
+	mComputeBoardShaders->UnbindComputeShader(md3dContext.Get());
 }
 
 void LightsOutRenderer::DrawBoardTexOnScreen()
@@ -420,23 +396,26 @@ void LightsOutRenderer::DrawBoardTexOnScreen()
 
 	md3dContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 
-	DrawScreenVariables::SetAllVariables(md3dContext.Get());
-	DrawScreenShaders::SetPipelineShaders(md3dContext.Get());
+	mDrawScreenVariables->SetBoardTexture(mTextures->ResultSRV());
+	mDrawScreenVariables->SetSamplerState(mRenderStates->TexturePointSamplerState());
+
+	mDrawScreenVariables->SetAllVariables(md3dContext.Get());
+	mDrawScreenShaders->SetPipelineShaders(md3dContext.Get());
 
 	md3dContext->Draw(4, 0);
 
-	DrawScreenVariables::DisableVariables(md3dContext.Get());
-	ShaderBinder::UnbindPipelineShaders(md3dContext.Get());
+	mDrawScreenVariables->DisableVariables(md3dContext.Get());
+	mDrawScreenShaders->UnbindPipelineShaders(md3dContext.Get());
 }
 
 bool LightsOutRenderer::IsDrawTypeBinary()
 {
-	return (mDrawType == DrawType::DRAW_SQUARES) || (mDrawType == DrawType::DRAW_CIRCLES) || (mDrawType == DrawType::DRAW_RAINDROPS) || (mDrawType == DrawType::DRAW_CHAINS);
+	return (mDrawType == DrawType::DRAW_SQUARES) || (mDrawType == DrawType::DRAW_CIRCLES) || (mDrawType == DrawType::DRAW_DIAMONDS) || (mDrawType == DrawType::DRAW_RAINDROPS) || (mDrawType == DrawType::DRAW_CHAINS);
 }
 
 bool LightsOutRenderer::IsDrawTypeDomain()
 {
-	return (mDrawType == DrawType::DRAW_SQUARES_DOMAIN) || (mDrawType == DrawType::DRAW_CIRCLES_DOMAIN) || (mDrawType == DrawType::DRAW_RAINDROPS_DOMAIN) || (mDrawType == DrawType::DRAW_CHAINS_DOMAIN);
+	return (mDrawType == DrawType::DRAW_SQUARES_DOMAIN) || (mDrawType == DrawType::DRAW_CIRCLES_DOMAIN) || (mDrawType == DrawType::DRAW_DIAMONDS_DOMAIN) || (mDrawType == DrawType::DRAW_RAINDROPS_DOMAIN) || (mDrawType == DrawType::DRAW_CHAINS_DOMAIN);
 }
 
 bool LightsOutRenderer::IsDrawTypeSquares()
@@ -447,6 +426,11 @@ bool LightsOutRenderer::IsDrawTypeSquares()
 bool LightsOutRenderer::IsDrawTypeCircles()
 {
 	return (mDrawType == DrawType::DRAW_CIRCLES) || (mDrawType == DrawType::DRAW_CIRCLES_DOMAIN);
+}
+
+bool LightsOutRenderer::IsDrawTypeDiamonds()
+{
+	return (mDrawType == DrawType::DRAW_DIAMONDS) || (mDrawType == DrawType::DRAW_DIAMONDS_DOMAIN);
 }
 
 bool LightsOutRenderer::IsDrawTypeRaindrops()
@@ -471,12 +455,12 @@ void LightsOutRenderer::DrawBgBoardToMemory(uint16_t cellSize, uint16_t gameSize
 {
 	outData.clear();
 
-	ComputeBoardVariables::SetCellSize(cellSize);
+	mComputeBoardVariables->SetCellSize(cellSize);
 
-	LOTextures::ResizeBoard(gameSize, cellSize, md3dDevice.Get());
+	mTextures->ResizeBoard(gameSize, cellSize, md3dDevice.Get());
 	DrawBoardOnTexture(cellSize, gameSize);
 
-	ID3D11Texture2D* resultTex = LOTextures::MappedTex(md3dContext.Get());
+	ID3D11Texture2D* resultTex = mTextures->MappedTex(md3dContext.Get());
 
 	D3D11_TEXTURE2D_DESC tDesc;
 	resultTex->GetDesc(&tDesc);

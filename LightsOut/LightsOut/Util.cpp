@@ -1,4 +1,5 @@
 #include "Util.hpp"
+#include <comdef.h>
 
 int32_t InvModGcdex(int32_t x, int32_t domainSize)
 {
@@ -36,4 +37,20 @@ int32_t InvModGcdex(int32_t x, int32_t domainSize)
 			return tCurr;
 		}
 	}
+}
+
+DXException::DXException(HRESULT hr, const std::wstring& funcName, const std::wstring& filename, int32_t line)
+{
+	mErrorCode  = hr;
+	mFuncName   = funcName;
+	mFilename   = filename;
+	mLineNumber = line;
+}
+
+std::wstring DXException::ToString() const
+{
+	_com_error err(mErrorCode);
+	std::wstring msg = err.ErrorMessage();
+
+	return mFuncName + L" failed in " + mFilename + L"; line " + std::to_wstring(mLineNumber) + L"; error: " + msg;
 }

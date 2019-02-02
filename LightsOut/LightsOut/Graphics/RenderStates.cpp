@@ -1,24 +1,19 @@
 #include "RenderStates.hpp"
 #include "..\Util.hpp"
 
-ID3D11SamplerState *RenderStates::mTextureSS = nullptr;
-
-bool RenderStates::InitAll(ID3D11Device *device)
+RenderStates::RenderStates(ID3D11Device *device)
 {
-	D3D11_SAMPLER_DESC TextureDesc;
-	ZeroMemory(&TextureDesc, sizeof(D3D11_SAMPLER_DESC));
-	TextureDesc.Filter = D3D11_FILTER_MIN_LINEAR_MAG_MIP_POINT;
-	TextureDesc.MaxAnisotropy = 4;
-	TextureDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-	TextureDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-	TextureDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+	D3D11_SAMPLER_DESC SamplerPointDesc;
+	ZeroMemory(&SamplerPointDesc, sizeof(D3D11_SAMPLER_DESC));
+	SamplerPointDesc.Filter = D3D11_FILTER_MIN_LINEAR_MAG_MIP_POINT;
+	SamplerPointDesc.MaxAnisotropy = 4;
+	SamplerPointDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+	SamplerPointDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+	SamplerPointDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
 
-	ASSERT_ERR(device->CreateSamplerState(&TextureDesc, &mTextureSS));
-
-	return true;
+	ThrowIfFailed(device->CreateSamplerState(&SamplerPointDesc, mTexturePointSamplerState.GetAddressOf()));
 }
 
-void RenderStates::DestroyAll()
+RenderStates::~RenderStates()
 {
-	SafeRelease(mTextureSS);
 }

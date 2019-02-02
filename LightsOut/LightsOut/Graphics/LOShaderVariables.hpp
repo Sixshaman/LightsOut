@@ -4,60 +4,71 @@
 #include <Windows.h>
 #include <d3d11.h>
 #include <DirectXMath.h>
-
-using DirectX::XMFLOAT4;
-using DirectX::XMVECTOR;
+#include <wrl\client.h>
 
 #pragma region ComputeBoard
 
-struct CS_CBUFFER
-{
-	uint32_t BoardSize;
-	uint32_t CellSize;
-	uint32_t DomainSize;
-	uint32_t Flags;
-
-	XMFLOAT4 ColorNone;
-	XMFLOAT4 ColorEnabled;
-	XMFLOAT4 ColorSolved;
-	XMFLOAT4 ColorBetween;
-};
-
 /*
-* The class for variables of shader that writing board on off-screen texture
+* The class for shader variables to write the board on off-screen texture
 *
 */
 class ComputeBoardVariables
 {
 public:
-	static bool InitAll(ID3D11Device *device);
-	static void DestroyAll();
+	ComputeBoardVariables(ID3D11Device *device);
+	~ComputeBoardVariables();
 
-	static void SetCSVariables(ID3D11DeviceContext *dc);
-	static void DisableVariables(ID3D11DeviceContext* dc);
+	void SetCSVariables(ID3D11DeviceContext *dc);
+	void DisableVariables(ID3D11DeviceContext* dc);
 
-	static void SetBoardSize(uint32_t boardSize);
-	static void SetCellSize(uint32_t cellSize);
-	static void SetDomainSize(uint32_t domainSize);
-	static void SetSolutionVisible(bool solveVisible);
-	static void SetStabilityVisible(bool stabilityVisible);
+	void SetBoardSrv(ID3D11ShaderResourceView* srv);
+	void SetSolutionSrv(ID3D11ShaderResourceView* srv);
+	void SetStabilitySrv(ID3D11ShaderResourceView* srv);
 
-	static void SetColorNone(XMVECTOR colorNone);
-	static void SetColorEnabled(XMVECTOR colorEnabled);
-	static void SetColorSolved(XMVECTOR colorSolved);
-	static void SetColorBetween(XMVECTOR colorBetween);
+	void SetResultUav(ID3D11UnorderedAccessView* uav);
 
-	static void SetColorBetweenAsNone();
-	static void SetColorBetweenAsEnabled();
-	static void SetColorBetweenAsSolved();
-	static void SetColorBetweenAsDimmed();
+	void SetBoardSize(uint32_t boardSize);
+	void SetCellSize(uint32_t cellSize);
+	void SetDomainSize(uint32_t domainSize);
+	void SetSolutionVisible(bool solveVisible);
+	void SetStabilityVisible(bool stabilityVisible);
 
-	static void UpdateCSCBuffer(ID3D11DeviceContext *dc);
+	void SetColorNone(DirectX::XMVECTOR colorNone);
+	void SetColorEnabled(DirectX::XMVECTOR colorEnabled);
+	void SetColorSolved(DirectX::XMVECTOR colorSolved);
+	void SetColorBetween(DirectX::XMVECTOR colorBetween);
+
+	void SetColorBetweenAsNone();
+	void SetColorBetweenAsEnabled();
+	void SetColorBetweenAsSolved();
+	void SetColorBetweenAsDimmed();
+
+	void UpdateCSCBuffer(ID3D11DeviceContext *dc);
 
 private:
-	static ID3D11Buffer *mCSCbuffer;
+	struct CS_CBUFFER
+	{
+		uint32_t BoardSize;
+		uint32_t CellSize;
+		uint32_t DomainSize;
+		uint32_t Flags;
 
-	static CS_CBUFFER mCSCBufferCopy;
+		DirectX::XMFLOAT4 ColorNone;
+		DirectX::XMFLOAT4 ColorEnabled;
+		DirectX::XMFLOAT4 ColorSolved;
+		DirectX::XMFLOAT4 ColorBetween;
+	};
+
+private:
+	Microsoft::WRL::ComPtr<ID3D11Buffer> mCSCbuffer;
+
+	CS_CBUFFER mCSCBufferCopy;
+
+	ID3D11ShaderResourceView* mBoardSrv;
+	ID3D11ShaderResourceView* mSolutionSrv;
+	ID3D11ShaderResourceView* mStabilitySrv;
+
+	ID3D11UnorderedAccessView* mResultUav;
 };
 
 #pragma endregion ComputeBoard
@@ -65,17 +76,26 @@ private:
 #pragma region DrawScreen
 
 /*
-* The class for variables of shaders that drawing Lights Out board on screen
+* The class for shader variables to draw Lights Out board texture on screen
 *
 */
 class DrawScreenVariables
 {
 public:
-	static bool InitAll(ID3D11Device *device);
-	static void DestroyAll();
+	DrawScreenVariables(ID3D11Device *device);
+	~DrawScreenVariables();
 
-	static void SetAllVariables(ID3D11DeviceContext *dc);
-	static void DisableVariables(ID3D11DeviceContext* dc);
+	void SetAllVariables(ID3D11DeviceContext *dc);
+	void DisableVariables(ID3D11DeviceContext* dc);
+
+	void SetBoardTexture(ID3D11ShaderResourceView* boardTexture);
+
+	void SetSamplerState(ID3D11SamplerState* samplerState);
+
+private:
+	ID3D11SamplerState* mTextureSamplerState;
+
+	ID3D11ShaderResourceView* mBoardTextureSrv;
 };
 
 #pragma endregion DrawScreen

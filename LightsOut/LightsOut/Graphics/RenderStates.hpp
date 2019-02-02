@@ -2,6 +2,7 @@
 #define RENDERSTATES_HPP
 
 #include <d3d11.h>
+#include <wrl\client.h>
 
 /*
 * The class for some render states for drawing Lights Out board on screen
@@ -10,12 +11,13 @@
 class RenderStates
 {
 public:
-	static bool InitAll(ID3D11Device *device);
-	static void DestroyAll();
+	RenderStates(ID3D11Device *device);
+	~RenderStates();
 
-	static ID3D11SamplerState* TextureSS() { return mTextureSS; };
+	ID3D11SamplerState* TexturePointSamplerState() { return mTexturePointSamplerState.Get(); };
+
 private:
-	static ID3D11SamplerState *mTextureSS;
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> mTexturePointSamplerState;
 };
 
 #endif RENDERSTATES_HPP

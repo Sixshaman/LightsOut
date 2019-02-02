@@ -108,7 +108,7 @@ private:
 	HWND	  mMainWnd;
 	HMENU     mMainMenu;
 
-	LightsOutRenderer mRenderer;
+	std::unique_ptr<LightsOutRenderer> mRenderer;
 
 	LightsOutGame   mGame;
 	LightsOutSolver mSolver;

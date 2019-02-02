@@ -2,26 +2,7 @@
 #define LO_SHADERS_HPP
 
 #include <d3d11.h>
-
-typedef void(*ShaderBindFunc)(ID3D11DeviceContext*);
-
-#pragma region Help
-
-/*
-* The helper class for unbinding shaders from pipeline
-*
-*/
-class ShaderBinder 
-{
-public:
-	static void UnbindAllShaders(ID3D11DeviceContext *dc);
-
-	static void UnbindPipelineShaders(ID3D11DeviceContext *dc);
-	static void UnbindComputeShader(ID3D11DeviceContext *dc);
-	static void UnbindVertexPixelShaders(ID3D11DeviceContext *dc);
-};
-
-#pragma endregion Help
+#include <wrl/client.h>
 
 #pragma region ComputeBoard
 
@@ -33,27 +14,35 @@ public:
 class ComputeBoardShaders
 {
 public:
-	static bool InitAll(ID3D11Device *device);
-	static void DestroyAll();
+	ComputeBoardShaders(ID3D11Device* device);
+	~ComputeBoardShaders();
 
-	static void SetComputeBoardShader(ID3D11DeviceContext *dc);
-	static void SetComputeBoardCirclesShader(ID3D11DeviceContext *dc);
-	static void SetComputeBoardRaindropsShader(ID3D11DeviceContext *dc);
-	static void SetComputeBoardChainsShader(ID3D11DeviceContext *dc);
-	static void SetComputeEveryBoardShader(ID3D11DeviceContext *dc);
-	static void SetComputeEveryBoardCirclesShader(ID3D11DeviceContext *dc);
-	static void SetComputeEveryBoardRaindropsShader(ID3D11DeviceContext *dc);
-	static void SetComputeEveryBoardChainsShader(ID3D11DeviceContext *dc);
+	void SetComputeBoardShader(ID3D11DeviceContext* dc);
+	void SetComputeBoardCirclesShader(ID3D11DeviceContext* dc);
+	void SetComputeBoardDiamondsShader(ID3D11DeviceContext* dc);
+	void SetComputeBoardRaindropsShader(ID3D11DeviceContext* dc);
+	void SetComputeBoardChainsShader(ID3D11DeviceContext* dc);
+
+	void SetComputeEveryBoardShader(ID3D11DeviceContext* dc);
+	void SetComputeEveryBoardCirclesShader(ID3D11DeviceContext* dc);
+	void SetComputeEveryBoardDiamondsShader(ID3D11DeviceContext* dc);
+	void SetComputeEveryBoardRaindropsShader(ID3D11DeviceContext* dc);
+	void SetComputeEveryBoardChainsShader(ID3D11DeviceContext* dc);
+
+	void UnbindComputeShader(ID3D11DeviceContext* dc);
 
 private:
-	static ID3D11ComputeShader* mComputeBoardShader;
-	static ID3D11ComputeShader* mComputeBoardCirclesShader;
-	static ID3D11ComputeShader* mComputeBoardRaindopsShader;
-	static ID3D11ComputeShader* mComputeBoardChainsShader;
-	static ID3D11ComputeShader* mComputeEveryBoardShader;
-	static ID3D11ComputeShader* mComputeEveryBoardCirclesShader;
-	static ID3D11ComputeShader* mComputeEveryBoardRaindropsShader;
-	static ID3D11ComputeShader* mComputeEveryBoardChainsShader;
+	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mComputeBoardShader;
+	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mComputeBoardCirclesShader;
+	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mComputeBoardDiamondsShader;
+	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mComputeBoardRaindopsShader;
+	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mComputeBoardChainsShader;
+
+	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mComputeEveryBoardShader;
+	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mComputeEveryBoardCirclesShader;
+	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mComputeEveryBoardDiamondsShader;
+	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mComputeEveryBoardRaindropsShader;
+	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mComputeEveryBoardChainsShader;
 };
 
 #pragma endregion ComputeBoard
@@ -67,20 +56,15 @@ private:
 class DrawScreenShaders 
 {
 public:
-	static bool InitAll(ID3D11Device *device);
-	static void DestroyAll();
+	DrawScreenShaders(ID3D11Device *device);
+	~DrawScreenShaders();
 
-	static void* GetInputSignature() { return mInputSignature; };
-	static int GeiIASignatureSize() { return mInputSignatureSize; };
-
-	static void SetPipelineShaders(ID3D11DeviceContext *dc);
+	void SetPipelineShaders(ID3D11DeviceContext* dc);
+	void UnbindPipelineShaders(ID3D11DeviceContext* dc);
 
 private:
-	static ID3D11VertexShader *mVertexShader;
-	static ID3D11PixelShader  *mPixelShader;
-
-	static void* mInputSignature;
-	static int mInputSignatureSize;
+	Microsoft::WRL::ComPtr<ID3D11VertexShader> mVertexShader;
+	Microsoft::WRL::ComPtr<ID3D11PixelShader>  mPixelShader;
 };
 
 #pragma endregion DrawScreen

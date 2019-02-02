@@ -5,16 +5,22 @@
 #include <wrl\client.h>
 #include <memory>
 #include <vector>
+#include "LOShaders.hpp"
+#include "LOShaderVariables.hpp"
+#include "LOTextures.hpp"
+#include "RenderStates.hpp"
 #include "..\Math\LightsOutBoard.hpp"
 
 enum class DrawType
 {
 	DRAW_SQUARES,
 	DRAW_CIRCLES,
+	DRAW_DIAMONDS,
 	DRAW_RAINDROPS,
 	DRAW_CHAINS,
 	DRAW_SQUARES_DOMAIN,
 	DRAW_CIRCLES_DOMAIN,
+	DRAW_DIAMONDS_DOMAIN,
 	DRAW_RAINDROPS_DOMAIN,
 	DRAW_CHAINS_DOMAIN
 };
@@ -23,6 +29,7 @@ enum class ColorTheme
 {
 	RED_EXPLOSION,
 	NEON_XXL,
+	AUTUMM,
 	CREAMED_STRAWBERRY,
 	HARD_TO_SEE,
 	BLACK_AND_WHITE,
@@ -37,10 +44,8 @@ enum class ColorTheme
 class LightsOutRenderer
 {
 public:
-	LightsOutRenderer();
+	LightsOutRenderer(HWND hwnd);
 	~LightsOutRenderer();
-
-	bool InitD3D(HWND hwnd);
 
 	void ResetBoardSize(uint16_t newSize);
 	void ResetDomainSize(uint16_t newDomainSize);
@@ -54,6 +59,7 @@ public:
 
 	void SetDrawTypeSquares();
 	void SetDrawTypeCircles();
+	void SetDrawTypeDiamonds();
 	void SetDrawTypeRaindrops();
 	void SetDrawTypeChains();
 
@@ -79,6 +85,7 @@ private:
 
 	bool IsDrawTypeSquares();
 	bool IsDrawTypeCircles();
+	bool IsDrawTypeDiamonds();
 	bool IsDrawTypeRaindrops();
 	bool IsDrawTypeChains();
 
@@ -90,6 +97,14 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> mRenderTarget;
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> mDepthStencilView;
 	D3D11_VIEWPORT			mViewport;
+
+	std::unique_ptr<ComputeBoardShaders>   mComputeBoardShaders;
+	std::unique_ptr<DrawScreenShaders>     mDrawScreenShaders;
+	std::unique_ptr<ComputeBoardVariables> mComputeBoardVariables;
+	std::unique_ptr<DrawScreenVariables>   mDrawScreenVariables;
+
+	std::unique_ptr<LOTextures>   mTextures;
+	std::unique_ptr<RenderStates> mRenderStates;
 
 	DrawType mDrawType;
 };

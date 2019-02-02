@@ -3,6 +3,7 @@
 
 #include "..\Math\LightsOutBoard.hpp"
 #include <d3d11.h>
+#include <wrl\client.h>
 
 /*
 * Textures and buffers of Lights Out puzzle
@@ -11,40 +12,37 @@
 class LOTextures
 {
 public:
-	static bool InitSRVs(ID3D11Device* Device);
-	static void DestroyAll();
+	LOTextures(ID3D11Device* Device);
+	~LOTextures();
 
-	static void UpdateBoard(const LightsOutBoard& board, ID3D11DeviceContext* dc);
-	static void UpdateSolution(const LightsOutBoard& solution, ID3D11DeviceContext* dc);
-	static void UpdateStability(const LightsOutBoard& stability, ID3D11DeviceContext* dc);
+	void UpdateBoard(const LightsOutBoard& board, ID3D11DeviceContext* dc);
+	void UpdateSolution(const LightsOutBoard& solution, ID3D11DeviceContext* dc);
+	void UpdateStability(const LightsOutBoard& stability, ID3D11DeviceContext* dc);
 
-	static bool ResizeBoard(uint32_t newBoardSize, uint16_t cellSize, ID3D11Device* device);
+	bool ResizeBoard(uint32_t newBoardSize, uint16_t cellSize, ID3D11Device* device);
 
-	static ID3D11Texture2D* MappedTex(ID3D11DeviceContext* dc);
+	ID3D11Texture2D* MappedTex(ID3D11DeviceContext* dc);
 
-	static ID3D11ShaderResourceView* BoardSRV()     { return mBoardSRV;     };
-	static ID3D11ShaderResourceView* SolutionSRV()  { return mSolutionSRV;  };
-	static ID3D11ShaderResourceView* StabilitySRV() { return mStabilitySRV; };
+	ID3D11ShaderResourceView* BoardSRV()     { return mBoardSRV.Get();     };
+	ID3D11ShaderResourceView* SolutionSRV()  { return mSolutionSRV.Get();  };
+	ID3D11ShaderResourceView* StabilitySRV() { return mStabilitySRV.Get(); };
 
-	static ID3D11ShaderResourceView*  ResultSRV() { return mResultSRV; };
-	static ID3D11UnorderedAccessView* ResultUAV() { return mResultUAV; };
+	ID3D11ShaderResourceView*  ResultSRV() { return mResultSRV.Get(); };
+	ID3D11UnorderedAccessView* ResultUAV() { return mResultUAV.Get(); };
 
 private:
-	static ID3D11ShaderResourceView* mBoardSRV;
-	static ID3D11ShaderResourceView* mSolutionSRV;
-	static ID3D11ShaderResourceView* mStabilitySRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> mBoardSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> mSolutionSRV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> mStabilitySRV;
 
-	static ID3D11ShaderResourceView* mResultSRV;
-	static ID3D11UnorderedAccessView* mResultUAV;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>  mResultSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> mResultUAV;
 
-	static ID3D11ShaderResourceView*  mResultToSaveSRV;
-	static ID3D11UnorderedAccessView* mResultToSaveUAV;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> mBoardBuf;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> mSolutionBuf;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> mStabilityBuf;
 
-	static ID3D11Buffer* mBoardBuf;
-	static ID3D11Buffer* mSolutionBuf;
-	static ID3D11Buffer* mStabilityBuf;
-
-	static ID3D11Texture2D* mResultCopy;
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> mResultCopy;
 };
 
 #endif LOTEXTURES_HPP

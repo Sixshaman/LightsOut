@@ -2,25 +2,11 @@
 #include "..\Util.hpp"
 #include <vector>
 
-ID3D11ShaderResourceView* LOTextures::mBoardSRV = nullptr; 
-ID3D11ShaderResourceView* LOTextures::mSolutionSRV = nullptr; 
-ID3D11ShaderResourceView* LOTextures::mStabilitySRV = nullptr;
-ID3D11ShaderResourceView* LOTextures::mResultSRV = nullptr;
-ID3D11UnorderedAccessView* LOTextures::mResultUAV = nullptr; 
-ID3D11ShaderResourceView* LOTextures::mResultToSaveSRV = nullptr;
-ID3D11UnorderedAccessView* LOTextures::mResultToSaveUAV = nullptr;
-ID3D11Buffer* LOTextures::mBoardBuf = nullptr;
-ID3D11Buffer* LOTextures::mSolutionBuf = nullptr;
-ID3D11Buffer* LOTextures::mStabilityBuf = nullptr;
-ID3D11Texture2D* LOTextures::mResultCopy = nullptr;
-
-bool LOTextures::InitSRVs(ID3D11Device* device)
+LOTextures::LOTextures(ID3D11Device* device)
 {
-	DestroyAll();
-
 	uint32_t maxBoardSize = MAXIMUM_FIELD_SIZE * MAXIMUM_FIELD_SIZE; //Even the board of maximum size can fit here
 
-	std::vector<uint32_t> boardVec(maxBoardSize, 0); //Compressed board
+	std::vector<uint32_t> boardVec(maxBoardSize, 0); //Compressed or uncompressed board
 
 	D3D11_BUFFER_DESC boardDesc;
 	boardDesc.Usage               = D3D11_USAGE_DYNAMIC;
@@ -31,26 +17,13 @@ bool LOTextures::InitSRVs(ID3D11Device* device)
 	boardDesc.StructureByteStride = 0;
 
 	D3D11_SUBRESOURCE_DATA boardData;
-	boardData.pSysMem = &boardVec[0];
-	if(FAILED(device->CreateBuffer(&boardDesc, &boardData, &mBoardBuf)))
-	{
-		MessageBox(nullptr, L"Board texture creation error!", L"Error", MB_ICONERROR | MB_OK);
-		return false;
-	}
-	
-	boardData.pSysMem = &boardVec[0];
-	if(FAILED(device->CreateBuffer(&boardDesc, &boardData, &mSolutionBuf)))
-	{
-		MessageBox(nullptr, L"Solve texture creation error!", L"Error", MB_ICONERROR | MB_OK);
-		return false;
-	}
+	boardData.pSysMem          = &boardVec[0];
+	boardData.SysMemPitch      = 0;
+	boardData.SysMemSlicePitch = 0;
 
-	boardData.pSysMem = &boardVec[0];
-	if (FAILED(device->CreateBuffer(&boardDesc, &boardData, &mStabilityBuf)))
-	{
-		MessageBox(nullptr, L"Solve texture creation error!", L"Error", MB_ICONERROR | MB_OK);
-		return false;
-	}
+	ThrowIfFailed(device->CreateBuffer(&boardDesc, &boardData, mBoardBuf.GetAddressOf()));
+	ThrowIfFailed(device->CreateBuffer(&boardDesc, &boardData, mSolutionBuf.GetAddressOf()));
+	ThrowIfFailed(device->CreateBuffer(&boardDesc, &boardData, mStabilityBuf.GetAddressOf()));
 
 	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
 	srvDesc.Format               = DXGI_FORMAT_R32_UINT;
@@ -60,41 +33,13 @@ bool LOTextures::InitSRVs(ID3D11Device* device)
 	srvDesc.Buffer.FirstElement  = 0;
 	srvDesc.Buffer.NumElements   = boardVec.size();
 
-
-	if(FAILED(device->CreateShaderResourceView(mBoardBuf, &srvDesc, &mBoardSRV)))
-	{
-		MessageBox(nullptr, L"Board SRV creation error!", L"Error", MB_ICONERROR | MB_OK);
-		return false;
-	}
-
-	if(FAILED(device->CreateShaderResourceView(mSolutionBuf, &srvDesc, &mSolutionSRV)))
-	{
-		MessageBox(nullptr, L"Solve SRV creation error!", L"Error", MB_ICONERROR | MB_OK);
-		return false;
-	}
-
-	if (FAILED(device->CreateShaderResourceView(mStabilityBuf, &srvDesc, &mStabilitySRV)))
-	{
-		MessageBox(nullptr, L"Stability SRV creation error!", L"Error", MB_ICONERROR | MB_OK);
-		return false;
-	}
-
-	return true;
+	ThrowIfFailed(device->CreateShaderResourceView(mBoardBuf.Get(),     &srvDesc, mBoardSRV.GetAddressOf()));
+	ThrowIfFailed(device->CreateShaderResourceView(mSolutionBuf.Get(),  &srvDesc, mSolutionSRV.GetAddressOf()));
+	ThrowIfFailed(device->CreateShaderResourceView(mStabilityBuf.Get(), &srvDesc, mStabilitySRV.GetAddressOf()));
 }
 
-void LOTextures::DestroyAll()
+LOTextures::~LOTextures()
 {
-	SafeRelease(mBoardSRV);
-	SafeRelease(mSolutionSRV);
-	SafeRelease(mStabilitySRV);
-	SafeRelease(mResultSRV);
-	SafeRelease(mResultUAV);
-	SafeRelease(mResultToSaveSRV);
-	SafeRelease(mResultToSaveUAV);
-	SafeRelease(mBoardBuf);
-	SafeRelease(mSolutionBuf);
-	SafeRelease(mStabilityBuf);
-	SafeRelease(mResultCopy);
 }
 
 void LOTextures::UpdateBoard(const LightsOutBoard& board, ID3D11DeviceContext* dc)
@@ -102,10 +47,10 @@ void LOTextures::UpdateBoard(const LightsOutBoard& board, ID3D11DeviceContext* d
 	uint32_t maxBoardSize = MAXIMUM_FIELD_SIZE * MAXIMUM_FIELD_SIZE;
 
 	D3D11_MAPPED_SUBRESOURCE boardSubresource;
-	dc->Map(mBoardBuf, 0, D3D11_MAP_WRITE_DISCARD, 0, &boardSubresource);
+	dc->Map(mBoardBuf.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &boardSubresource);
 	uint32_t* boardData = reinterpret_cast<uint32_t*>(boardSubresource.pData);
 	board.CopyMemoryData(boardData, maxBoardSize);
-	dc->Unmap(mBoardBuf, 0);
+	dc->Unmap(mBoardBuf.Get(), 0);
 }
 
 void LOTextures::UpdateSolution(const LightsOutBoard& solution, ID3D11DeviceContext* dc)
@@ -113,10 +58,10 @@ void LOTextures::UpdateSolution(const LightsOutBoard& solution, ID3D11DeviceCont
 	uint32_t maxBoardSize = MAXIMUM_FIELD_SIZE * MAXIMUM_FIELD_SIZE;
 
 	D3D11_MAPPED_SUBRESOURCE solveSubresource;
-	dc->Map(mSolutionBuf, 0, D3D11_MAP_WRITE_DISCARD, 0, &solveSubresource);
+	dc->Map(mSolutionBuf.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &solveSubresource);
 	uint32_t* solveData = reinterpret_cast<uint32_t*>(solveSubresource.pData);
 	solution.CopyMemoryData(solveData, maxBoardSize);
-	dc->Unmap(mSolutionBuf, 0);
+	dc->Unmap(mSolutionBuf.Get(), 0);
 }
 
 void LOTextures::UpdateStability(const LightsOutBoard& stability, ID3D11DeviceContext* dc)
@@ -124,81 +69,52 @@ void LOTextures::UpdateStability(const LightsOutBoard& stability, ID3D11DeviceCo
 	uint32_t maxBoardSize = MAXIMUM_FIELD_SIZE * MAXIMUM_FIELD_SIZE;
 
 	D3D11_MAPPED_SUBRESOURCE stabSubresource;
-	dc->Map(mStabilityBuf, 0, D3D11_MAP_WRITE_DISCARD, 0, &stabSubresource);
+	dc->Map(mStabilityBuf.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &stabSubresource);
 	uint32_t* stabData = reinterpret_cast<uint32_t*>(stabSubresource.pData);
 	stability.CopyMemoryData(stabData, maxBoardSize);
-	dc->Unmap(mStabilityBuf, 0);
+	dc->Unmap(mStabilityBuf.Get(), 0);
 }
 
 bool LOTextures::ResizeBoard(uint32_t newBoardSize, uint16_t cellSize, ID3D11Device* device)
 {
-	SafeRelease(mResultSRV);
-	SafeRelease(mResultUAV);
-	SafeRelease(mResultCopy);
+	mResultSRV.Reset();
+	mResultUAV.Reset();
+	mResultCopy.Reset();
 
 	D3D11_TEXTURE2D_DESC texDesc;
-	texDesc.Usage = D3D11_USAGE_DEFAULT;
-	texDesc.Width = newBoardSize * cellSize + 1;
-	texDesc.Height = newBoardSize * cellSize + 1;
-	texDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
-	texDesc.SampleDesc.Count = 1;
+	texDesc.Usage              = D3D11_USAGE_DEFAULT;
+	texDesc.Width              = newBoardSize * cellSize + 1;
+	texDesc.Height             = newBoardSize * cellSize + 1;
+	texDesc.Format             = DXGI_FORMAT_R8G8B8A8_UNORM;
+	texDesc.BindFlags          = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+	texDesc.SampleDesc.Count   = 1;
 	texDesc.SampleDesc.Quality = 0;
-	texDesc.CPUAccessFlags = 0;
-	texDesc.ArraySize = 1;
-	texDesc.MipLevels = 1;
-	texDesc.MiscFlags = 0;
+	texDesc.CPUAccessFlags     = 0;
+	texDesc.ArraySize          = 1;
+	texDesc.MipLevels          = 1;
+	texDesc.MiscFlags          = 0;
 
-	ID3D11Texture2D* result = nullptr;
-	if(FAILED(device->CreateTexture2D(&texDesc, nullptr, &result)))
-	{
-		MessageBox(nullptr, L"Result texture creation error!", L"Error", MB_ICONERROR | MB_OK);
-		return false;
-	}
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> result;
+	ThrowIfFailed(device->CreateTexture2D(&texDesc, nullptr, result.GetAddressOf()));
 
-	texDesc.BindFlags = 0;
-	texDesc.Usage = D3D11_USAGE_STAGING;
+	texDesc.BindFlags      = 0;
+	texDesc.Usage          = D3D11_USAGE_STAGING;
 	texDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
-	if(FAILED(device->CreateTexture2D(&texDesc, nullptr, &mResultCopy)))
-	{
-		MessageBox(nullptr, L"Result copy creation error!", L"Error", MB_ICONERROR | MB_OK);
-		return false;
-	}
+	ThrowIfFailed(device->CreateTexture2D(&texDesc, nullptr, mResultCopy.GetAddressOf()));
 
-	if(FAILED(device->CreateShaderResourceView(result, nullptr, &mResultSRV)))
-	{
-		MessageBox(nullptr, L"Result SRV creation error!", L"Error", MB_ICONERROR | MB_OK);
-		return false;
-	}
-	if(FAILED(device->CreateUnorderedAccessView(result, nullptr, &mResultUAV)))
-	{
-		MessageBox(nullptr, L"Result UAV creation error!", L"Error", MB_ICONERROR | MB_OK);
-		return false;
-	}
-
-	SafeRelease(result);
-
-	return true;
+	ThrowIfFailed(device->CreateShaderResourceView(result.Get(),  nullptr, mResultSRV.GetAddressOf()));
+	ThrowIfFailed(device->CreateUnorderedAccessView(result.Get(), nullptr, mResultUAV.GetAddressOf()));
 }
 
 ID3D11Texture2D* LOTextures::MappedTex(ID3D11DeviceContext* dc)
 {
-	ID3D11Resource *result = nullptr;
-	mResultSRV->GetResource(&result);
+	Microsoft::WRL::ComPtr<ID3D11Resource> result;
+	mResultSRV->GetResource(result.GetAddressOf());
 
-	ID3D11Texture2D *resultTex = nullptr;
-	result->QueryInterface(__uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&resultTex));
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> resultTex;
+	result.As(&resultTex);
 
-	if(!result || !resultTex)
-	{
-		MessageBox(NULL, L"Error getting resource", L"Test", MB_OK);
-		return nullptr;
-	}
+	dc->CopyResource(mResultCopy.Get(), resultTex.Get());
 
-	dc->CopyResource(mResultCopy, resultTex);
-
-	SafeRelease(result);
-	SafeRelease(resultTex);
-
-	return mResultCopy;
+	return mResultCopy.Get();
 }
