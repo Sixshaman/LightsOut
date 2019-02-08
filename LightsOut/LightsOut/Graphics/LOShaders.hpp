@@ -20,12 +20,14 @@ public:
 	void SetComputeBoardShader(ID3D11DeviceContext* dc);
 	void SetComputeBoardCirclesShader(ID3D11DeviceContext* dc);
 	void SetComputeBoardDiamondsShader(ID3D11DeviceContext* dc);
+	void SetComputeBoardBeamsShader(ID3D11DeviceContext* dc);
 	void SetComputeBoardRaindropsShader(ID3D11DeviceContext* dc);
 	void SetComputeBoardChainsShader(ID3D11DeviceContext* dc);
 
 	void SetComputeEveryBoardShader(ID3D11DeviceContext* dc);
 	void SetComputeEveryBoardCirclesShader(ID3D11DeviceContext* dc);
 	void SetComputeEveryBoardDiamondsShader(ID3D11DeviceContext* dc);
+	void SetComputeEveryBoardBeamsShader(ID3D11DeviceContext* dc);
 	void SetComputeEveryBoardRaindropsShader(ID3D11DeviceContext* dc);
 	void SetComputeEveryBoardChainsShader(ID3D11DeviceContext* dc);
 
@@ -35,12 +37,14 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mComputeBoardShader;
 	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mComputeBoardCirclesShader;
 	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mComputeBoardDiamondsShader;
+	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mComputeBoardBeamsShader;
 	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mComputeBoardRaindopsShader;
 	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mComputeBoardChainsShader;
 
 	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mComputeEveryBoardShader;
 	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mComputeEveryBoardCirclesShader;
 	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mComputeEveryBoardDiamondsShader;
+	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mComputeEveryBoardBeamsShader;
 	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mComputeEveryBoardRaindropsShader;
 	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mComputeEveryBoardChainsShader;
 };

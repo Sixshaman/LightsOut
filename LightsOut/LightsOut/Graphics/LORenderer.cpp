@@ -168,6 +168,18 @@ void LightsOutRenderer::SetDrawTypeDiamonds()
 	}
 }
 
+void LightsOutRenderer::SetDrawTypeBeams()
+{
+	if(IsDrawTypeBinary())
+	{
+		mDrawType = DrawType::DRAW_BEAMS;
+	}
+	else if (IsDrawTypeDomain())
+	{
+		mDrawType = DrawType::DRAW_BEAMS_DOMAIN;
+	}
+}
+
 void LightsOutRenderer::SetDrawTypeRaindrops()
 {
 	if(IsDrawTypeBinary())
@@ -206,6 +218,10 @@ void LightsOutRenderer::SetDrawTypeBinary()
 	{
 		mDrawType = DrawType::DRAW_DIAMONDS;
 	}
+	else if(IsDrawTypeBeams())
+	{
+		mDrawType = DrawType::DRAW_BEAMS;
+	}
 	else if(IsDrawTypeRaindrops())
 	{
 		mDrawType = DrawType::DRAW_RAINDROPS;
@@ -229,6 +245,10 @@ void LightsOutRenderer::SetDrawTypeDomain()
 	else if(IsDrawTypeDiamonds())
 	{
 		mDrawType = DrawType::DRAW_DIAMONDS_DOMAIN;
+	}
+	else if(IsDrawTypeBeams())
+	{
+		mDrawType = DrawType::DRAW_BEAMS_DOMAIN;
 	}
 	else if(IsDrawTypeRaindrops())
 	{
@@ -348,6 +368,9 @@ void LightsOutRenderer::DrawBoardOnTexture(uint16_t cellSize, uint16_t gameSize)
 	case DrawType::DRAW_DIAMONDS:
 		mComputeBoardShaders->SetComputeBoardDiamondsShader(md3dContext.Get());
 		break;
+	case DrawType::DRAW_BEAMS:
+		mComputeBoardShaders->SetComputeBoardBeamsShader(md3dContext.Get());
+		break;
 	case DrawType::DRAW_RAINDROPS:
 		mComputeBoardShaders->SetComputeBoardRaindropsShader(md3dContext.Get());
 		break;
@@ -362,6 +385,9 @@ void LightsOutRenderer::DrawBoardOnTexture(uint16_t cellSize, uint16_t gameSize)
 		break;
 	case DrawType::DRAW_DIAMONDS_DOMAIN:
 		mComputeBoardShaders->SetComputeEveryBoardDiamondsShader(md3dContext.Get());
+		break;
+	case DrawType::DRAW_BEAMS_DOMAIN:
+		mComputeBoardShaders->SetComputeEveryBoardBeamsShader(md3dContext.Get());
 		break;
 	case DrawType::DRAW_RAINDROPS_DOMAIN:
 		mComputeBoardShaders->SetComputeEveryBoardRaindropsShader(md3dContext.Get());
@@ -410,12 +436,12 @@ void LightsOutRenderer::DrawBoardTexOnScreen()
 
 bool LightsOutRenderer::IsDrawTypeBinary()
 {
-	return (mDrawType == DrawType::DRAW_SQUARES) || (mDrawType == DrawType::DRAW_CIRCLES) || (mDrawType == DrawType::DRAW_DIAMONDS) || (mDrawType == DrawType::DRAW_RAINDROPS) || (mDrawType == DrawType::DRAW_CHAINS);
+	return (mDrawType == DrawType::DRAW_SQUARES) || (mDrawType == DrawType::DRAW_CIRCLES) || (mDrawType == DrawType::DRAW_DIAMONDS) || (mDrawType == DrawType::DRAW_BEAMS) || (mDrawType == DrawType::DRAW_RAINDROPS) || (mDrawType == DrawType::DRAW_CHAINS);
 }
 
 bool LightsOutRenderer::IsDrawTypeDomain()
 {
-	return (mDrawType == DrawType::DRAW_SQUARES_DOMAIN) || (mDrawType == DrawType::DRAW_CIRCLES_DOMAIN) || (mDrawType == DrawType::DRAW_DIAMONDS_DOMAIN) || (mDrawType == DrawType::DRAW_RAINDROPS_DOMAIN) || (mDrawType == DrawType::DRAW_CHAINS_DOMAIN);
+	return (mDrawType == DrawType::DRAW_SQUARES_DOMAIN) || (mDrawType == DrawType::DRAW_CIRCLES_DOMAIN) || (mDrawType == DrawType::DRAW_DIAMONDS_DOMAIN) || (mDrawType == DrawType::DRAW_BEAMS_DOMAIN) || (mDrawType == DrawType::DRAW_RAINDROPS_DOMAIN) || (mDrawType == DrawType::DRAW_CHAINS_DOMAIN);
 }
 
 bool LightsOutRenderer::IsDrawTypeSquares()
@@ -431,6 +457,11 @@ bool LightsOutRenderer::IsDrawTypeCircles()
 bool LightsOutRenderer::IsDrawTypeDiamonds()
 {
 	return (mDrawType == DrawType::DRAW_DIAMONDS) || (mDrawType == DrawType::DRAW_DIAMONDS_DOMAIN);
+}
+
+bool LightsOutRenderer::IsDrawTypeBeams()
+{
+	return (mDrawType == DrawType::DRAW_BEAMS) || (mDrawType == DrawType::DRAW_BEAMS_DOMAIN);
 }
 
 bool LightsOutRenderer::IsDrawTypeRaindrops()

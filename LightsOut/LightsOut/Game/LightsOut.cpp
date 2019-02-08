@@ -30,8 +30,9 @@
 #define MENU_VIEW_SQUARES			  2001
 #define MENU_VIEW_CIRCLES			  2002
 #define MENU_VIEW_DIAMONDS			  2003
-#define MENU_VIEW_RAINDROPS			  2004
-#define MENU_VIEW_CHAINS			  2005
+#define MENU_VIEW_BEAMS			      2004
+#define MENU_VIEW_RAINDROPS			  2005
+#define MENU_VIEW_CHAINS			  2006
 
 #define MENU_VIEW_NO_EDGES			  2100
 
@@ -180,6 +181,7 @@ bool LightsOutApp::InitMenu()
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_SQUARES,   L"Squares");
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_CIRCLES,   L"Circles");
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_DIAMONDS,  L"Diamonds");
+	AppendMenu(MenuView, MF_STRING, MENU_VIEW_BEAMS,     L"Beams");
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_RAINDROPS, L"Raindrops");
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_CHAINS,    L"Chains");
 	AppendMenu(MenuView, MF_MENUBREAK, 0, nullptr);
@@ -309,6 +311,11 @@ void LightsOutApp::OnMenuItem(WPARAM State)
 	case MENU_VIEW_DIAMONDS:
 	{
 		mRenderer->SetDrawTypeDiamonds();
+		break;
+	}
+	case MENU_VIEW_BEAMS:
+	{
+		mRenderer->SetDrawTypeBeams();
 		break;
 	}
 	case MENU_VIEW_RAINDROPS:

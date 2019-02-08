@@ -16,11 +16,13 @@ enum class DrawType
 	DRAW_SQUARES,
 	DRAW_CIRCLES,
 	DRAW_DIAMONDS,
+	DRAW_BEAMS,
 	DRAW_RAINDROPS,
 	DRAW_CHAINS,
 	DRAW_SQUARES_DOMAIN,
 	DRAW_CIRCLES_DOMAIN,
 	DRAW_DIAMONDS_DOMAIN,
+	DRAW_BEAMS_DOMAIN,
 	DRAW_RAINDROPS_DOMAIN,
 	DRAW_CHAINS_DOMAIN
 };
@@ -60,6 +62,7 @@ public:
 	void SetDrawTypeSquares();
 	void SetDrawTypeCircles();
 	void SetDrawTypeDiamonds();
+	void SetDrawTypeBeams();
 	void SetDrawTypeRaindrops();
 	void SetDrawTypeChains();
 
@@ -86,6 +89,7 @@ private:
 	bool IsDrawTypeSquares();
 	bool IsDrawTypeCircles();
 	bool IsDrawTypeDiamonds();
+	bool IsDrawTypeBeams();
 	bool IsDrawTypeRaindrops();
 	bool IsDrawTypeChains();
 

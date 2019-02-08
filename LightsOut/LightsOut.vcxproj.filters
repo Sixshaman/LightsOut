@@ -187,5 +187,11 @@
     <FxCompile Include="LightsOut\Shaders\Compute\ComputeEveryBoardDiamonds.hlsl">
       <Filter>Shaders\Compute</Filter>
     </FxCompile>
+    <FxCompile Include="LightsOut\Shaders\Compute\ComputeBoardBeams.hlsl">
+      <Filter>Shaders\Compute</Filter>
+    </FxCompile>
+    <FxCompile Include="LightsOut\Shaders\Compute\ComputeEveryBoardBeams.hlsl">
+      <Filter>Shaders\Compute</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>
