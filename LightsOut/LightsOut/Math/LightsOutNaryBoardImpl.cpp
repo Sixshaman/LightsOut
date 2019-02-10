@@ -114,6 +114,17 @@ void LightsOutNaryBoardImpl::Flip()
 	}
 }
 
+void LightsOutNaryBoardImpl::RotateNonZero()
+{
+	for(uint32_t& cell : mBoard)
+	{
+		if(cell > 0)
+		{
+			cell = (cell) % (mDomainSize - 1) + 1;
+		}
+	}
+}
+
 void LightsOutNaryBoardImpl::InvertValues()
 {
 	for(uint32_t& cell: mBoard)

@@ -242,6 +242,11 @@ void LightsOutBoard::DomainRotate()
 	mpImpl->Flip();
 }
 
+void LightsOutBoard::DomainRotateNonZero()
+{
+	mpImpl->RotateNonZero();
+}
+
 void LightsOutBoard::InvertValues()
 {
 	if (DomainSize() > 2)

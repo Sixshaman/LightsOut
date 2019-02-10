@@ -54,6 +54,8 @@
 #define HOTKEY_ID_DECREASE_DOMAIN_SIZE 3001
 #define HOTKEY_ID_INCREASE_DOMAIN_SIZE 3002
 
+#define HOTKEY_ID_ROTATE_NONZERO 4001
+
 namespace
 {
 	LightsOutApp *gApp = nullptr;
@@ -214,6 +216,8 @@ bool LightsOutApp::InitHotkeys()
 
 	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_DECREASE_DOMAIN_SIZE, MOD_CONTROL, VK_OEM_MINUS);
 	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_INCREASE_DOMAIN_SIZE, MOD_CONTROL, VK_OEM_PLUS);
+
+	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_ROTATE_NONZERO, MOD_CONTROL, 'I');
 
 	return result;
 }
@@ -805,14 +809,25 @@ void LightsOutApp::ResetGameBoard(ResetMode resetMode, uint16_t gameSize, uint16
 			ShowStability(false);
 		}
 	}
-	else if(resetMode == ResetMode::RESET_INVERTO)
+	else if(resetMode == ResetMode::RESET_INVERTO || resetMode == ResetMode::RESET_DOMAIN_ROTATE_NONZERO)
 	{
 		ShowStability(false);
 
 		LightsOutBoard inverseBoard = mGame.GetBoard();
-		inverseBoard.DomainRotate();
-		mGame.Reset(inverseBoard, 0);
 
+		switch (resetMode)
+		{
+		case ResetMode::RESET_INVERTO:
+			inverseBoard.DomainRotate();
+			break;
+		case ResetMode::RESET_DOMAIN_ROTATE_NONZERO:
+			inverseBoard.DomainRotateNonZero();
+			break;
+		default:
+			break;
+		}
+
+		mGame.Reset(inverseBoard, 0);
 		if(mFlags & SHOW_SOLUTION)
 		{
 			mSolution = mSolver.GetSolution(mGame.GetBoard(), mGame.GetClickRule());
@@ -1233,6 +1248,7 @@ void LightsOutApp::OnHotkeyPresed(WPARAM hotkey)
 	switch (hotkey)
 	{
 	case HOTKEY_ID_CLICKMODE_REGULAR:
+	{
 		if(mWorkingMode == WorkingMode::LIT_BOARD)
 		{
 			ShowSolution(false);
@@ -1240,7 +1256,9 @@ void LightsOutApp::OnHotkeyPresed(WPARAM hotkey)
 			mGame.SetClickRuleRegular();
 		}
 		break;
+	}
 	case HOTKEY_ID_CLICKMODE_TOROID:
+	{
 		if(mWorkingMode == WorkingMode::LIT_BOARD)
 		{
 			ShowSolution(false);
@@ -1248,6 +1266,7 @@ void LightsOutApp::OnHotkeyPresed(WPARAM hotkey)
 			mGame.SetClickRuleToroid();
 		}
 		break;
+	}
 	case HOTKEY_ID_CLICKMODE_CUSTOM:
 	{
 		ChangeWorkingMode(WorkingMode::CONSTRUCT_CLICKRULE);
@@ -1284,6 +1303,11 @@ void LightsOutApp::OnHotkeyPresed(WPARAM hotkey)
 	case HOTKEY_ID_INCREASE_DOMAIN_SIZE:
 	{
 		ChangeDomainSize((int32_t)mGame.GetDomainSize() + 1);
+		break;
+	}
+	case HOTKEY_ID_ROTATE_NONZERO:
+	{
+		ResetGameBoard(ResetMode::RESET_DOMAIN_ROTATE_NONZERO);
 		break;
 	}
 	default:

@@ -63,6 +63,10 @@ void LightsOutBinaryBoardImpl::Flip()
 	mBoard.flip();
 }
 
+void LightsOutBinaryBoardImpl::RotateNonZero()
+{
+}
+
 bool LightsOutBinaryBoardImpl::IsNone() const
 {
 	return mBoard.none();

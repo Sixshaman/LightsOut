@@ -21,7 +21,8 @@ public:
 
 	virtual void IncrementCell(uint16_t x, uint16_t y) = 0;
 
-	virtual void Flip() = 0;
+	virtual void Flip()          = 0;
+	virtual void RotateNonZero() = 0;
 
 	virtual bool IsNone() const = 0;
 
@@ -53,7 +54,8 @@ public:
 
 	bool IsEqual(const LightsOutBinaryBoardImpl* right);
 
-	void Flip() override;
+	void Flip()          override;
+	void RotateNonZero() override;
 
 	bool IsNone() const override;
 
@@ -88,7 +90,8 @@ public:
 
 	bool IsEqual(const LightsOutNaryBoardImpl* right);
 
-	void Flip() override;
+	void Flip()          override;
+	void RotateNonZero() override;
 	void InvertValues();
 
 	bool IsNone() const override;

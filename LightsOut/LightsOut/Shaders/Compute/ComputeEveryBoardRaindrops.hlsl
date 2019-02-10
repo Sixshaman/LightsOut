@@ -52,11 +52,15 @@ void main(uint3 DTid: SV_DispatchThreadID)
 		float2 cellCoord    = DTid.xy - cellNumber * (float2)gCellSize.xx - (float2)gCellSize.xx / 2;
 		float  circleRadius = (gCellSize - 1) / 2;
 
+		float domainFactor = 1.0f / (gDomainSize - 1.0f);
+
 		bool insideCircle      = (dot(cellCoord, cellCoord) < circleRadius * circleRadius);
 		bool insideTopLeft     = !insideCircle && cellCoord.x <= 0 && cellCoord.y <= 0;
 		bool insideTopRight    = !insideCircle && cellCoord.x >= 0 && cellCoord.y <= 0;
 		bool insideBottomRight = !insideCircle && cellCoord.x >= 0 && cellCoord.y >= 0;
 		bool insideBottomLeft  = !insideCircle && cellCoord.x <= 0 && cellCoord.y >= 0;
+
+		bool4 insideCorner = bool4(insideTopLeft, insideTopRight, insideBottomRight, insideBottomLeft);
 
 		uint leftPartValue        = (cellNumber.x > 0             )                                   * CellValue(cellNumber + int2(-1,  0));
 		uint rightPartValue       = (cellNumber.x < gBoardSize - 1)                                   * CellValue(cellNumber + int2( 1,  0));
@@ -67,28 +71,18 @@ void main(uint3 DTid: SV_DispatchThreadID)
 		uint leftBottomPartValue  = (cellNumber.y < gBoardSize - 1) * (cellNumber.x > 0             ) * CellValue(cellNumber + int2(-1,  1));
 		uint rightBottomPartValue = (cellNumber.x < gBoardSize - 1) * (cellNumber.y < gBoardSize - 1) * CellValue(cellNumber + int2( 1,  1));
 
-		uint LTCandidate = (leftPartValue   == topPartValue   ) * leftPartValue;
-		uint RTCandidate = (topPartValue    == rightPartValue ) * topPartValue;
-		uint RBCandidate = (rightPartValue  == bottomPartValue) * rightPartValue;
-		uint LBCandidate = (bottomPartValue == leftPartValue  ) * bottomPartValue;
+		uint4 edgeValue   = uint4(leftPartValue,    topPartValue,      rightPartValue,       bottomPartValue);
+		uint4 cornerValue = uint4(leftTopPartValue, rightTopPartValue, rightBottomPartValue, leftBottomPartValue);
 
-		uint LTCCandidate = (cellValue == leftTopPartValue     || cellValue == topPartValue    || cellValue == leftPartValue)   * cellValue;
-		uint RTCCandidate = (cellValue == rightTopPartValue    || cellValue == rightPartValue  || cellValue == topPartValue)    * cellValue;
-		uint RBCCandidate = (cellValue == rightBottomPartValue || cellValue == bottomPartValue || cellValue == rightPartValue)  * cellValue;
-		uint LBCCandidate = (cellValue == leftBottomPartValue  || cellValue == leftPartValue   || cellValue == bottomPartValue) * cellValue;
+		uint4 emptyCornerCandidate = (edgeValue.xyzw == edgeValue.yzwx                                                                          ) * edgeValue;
+		uint4 cornerCandidate      = (cellValue.xxxx == cornerValue.xyzw || cellValue.xxxx == edgeValue.xyzw || cellValue.xxxx == edgeValue.yzwx) * cellValue.xxxx;
 
-		uint resLT = max(LTCandidate, LTCCandidate);
-		uint resRT = max(RTCandidate, RTCCandidate);
-		uint resRB = max(RBCandidate, RBCCandidate);
-		uint resLB = max(LBCandidate, LBCCandidate);
+		uint4 resCorner = max(emptyCornerCandidate, cornerCandidate);
 
-		float cellPower = (float)cellValue / (gDomainSize - 1.0f);
-		float LTPower   = (float)resLT     / (gDomainSize - 1.0f);
-		float RTPower   = (float)resRT     / (gDomainSize - 1.0f);
-		float RBPower   = (float)resRB     / (gDomainSize - 1.0f);
-		float LBPower   = (float)resLB     / (gDomainSize - 1.0f);
+		float  cellPower   = cellValue         * domainFactor;		
+		float4 cornerPower = (float4)resCorner * domainFactor;
 
-		float enablePower = cellPower * insideCircle + LTPower * insideTopLeft + RTPower * insideTopRight + RBPower * insideBottomRight + LBPower * insideBottomLeft;
+		float enablePower = cellPower * insideCircle + dot(cornerPower, insideCorner);
 		result            = lerp(gColorNone, gColorEnabled, enablePower);
 
 		[flatten]
@@ -105,28 +99,18 @@ void main(uint3 DTid: SV_DispatchThreadID)
 			uint leftBottomPartSolved  = (cellNumber.y < gBoardSize - 1) * (cellNumber.x > 0             ) * CellValueSolution(cellNumber + int2(-1,  1));
 			uint rightBottomPartSolved = (cellNumber.x < gBoardSize - 1) * (cellNumber.y < gBoardSize - 1) * CellValueSolution(cellNumber + int2( 1,  1));
 
-			uint LTSolutionCandidate = (leftPartSolved   == topPartSolved   ) * leftPartSolved;
-			uint RTSolutionCandidate = (topPartSolved    == rightPartSolved ) * topPartSolved;
-			uint RBSolutionCandidate = (rightPartSolved  == bottomPartSolved) * rightPartSolved;
-			uint LBSolutionCandidate = (bottomPartSolved == leftPartSolved  ) * bottomPartSolved;
+			uint4 edgeSolved   = uint4(leftPartSolved,    topPartSolved,      rightPartSolved,       bottomPartSolved);
+			uint4 cornerSolved = uint4(leftTopPartSolved, rightTopPartSolved, rightBottomPartSolved, leftBottomPartSolved);
 
-			uint LTCSolutionCandidate = (solutionValue == leftTopPartSolved     || solutionValue == topPartSolved    || solutionValue == leftPartSolved)   * solutionValue;
-			uint RTCSolutionCandidate = (solutionValue == rightTopPartSolved    || solutionValue == rightPartSolved  || solutionValue == topPartSolved)    * solutionValue;
-			uint RBCSolutionCandidate = (solutionValue == rightBottomPartSolved || solutionValue == bottomPartSolved || solutionValue == rightPartSolved)  * solutionValue;
-			uint LBCSolutionCandidate = (solutionValue == leftBottomPartSolved  || solutionValue == leftPartSolved   || solutionValue == bottomPartSolved) * solutionValue;
+			uint4 emptyCornerSolutionCandidate = (edgeSolved.xyzw    == edgeSolved.yzwx                                                                                    ) * edgeSolved;
+			uint4 cornerSolutionCandidate      = (solutionValue.xxxx == cornerSolved.xyzw || solutionValue.xxxx == edgeSolved.xyzw || solutionValue.xxxx == edgeSolved.yzwx) * solutionValue.xxxx;
 
-			uint resLTSolved = max(LTSolutionCandidate, LTCSolutionCandidate);
-			uint resRTSolved = max(RTSolutionCandidate, RTCSolutionCandidate);
-			uint resRBSolved = max(RBSolutionCandidate, RBCSolutionCandidate);
-			uint resLBSolved = max(LBSolutionCandidate, LBCSolutionCandidate);
+			uint4 resCornerSolved = max(emptyCornerSolutionCandidate, cornerSolutionCandidate);
 
-			float solutionPower   = (float)solutionValue / (gDomainSize - 1.0f);
-			float LTSolutionPower = (float)resLTSolved   / (gDomainSize - 1.0f);
-			float RTSolutionPower = (float)resRTSolved   / (gDomainSize - 1.0f);
-			float RBSolutionPower = (float)resRBSolved   / (gDomainSize - 1.0f);
-			float LBSolutionPower = (float)resLBSolved   / (gDomainSize - 1.0f);
+			float  solutionPower       = solutionValue           * domainFactor;		
+			float4 cornerSolutionPower = (float4)resCornerSolved * domainFactor;
 
-			float solvedPower = solutionPower * insideCircle + LTSolutionPower * insideTopLeft + RTSolutionPower * insideTopRight + RBSolutionPower * insideBottomRight + LBSolutionPower * insideBottomLeft;
+			float solvedPower = solutionPower * insideCircle + dot(cornerSolutionPower, insideCorner);
 			result            = lerp(result, gColorSolved, solvedPower);
 		}
 		else if(gFlags & FLAG_SHOW_STABILITY)
@@ -143,28 +127,18 @@ void main(uint3 DTid: SV_DispatchThreadID)
 			uint leftBottomPartStable  = (cellNumber.y < gBoardSize - 1) * (cellNumber.x > 0             ) * CellValueStability(cellNumber + int2(-1,  1));
 			uint rightBottomPartStable = (cellNumber.x < gBoardSize - 1) * (cellNumber.y < gBoardSize - 1) * CellValueStability(cellNumber + int2( 1,  1));
 
-			uint LTStabilityCandidate = (leftPartStable   == topPartStable   ) * leftPartStable;
-			uint RTStabilityCandidate = (topPartStable    == rightPartStable ) * topPartStable;
-			uint RBStabilityCandidate = (rightPartStable  == bottomPartStable) * rightPartStable;
-			uint LBStabilityCandidate = (bottomPartStable == leftPartStable  ) * bottomPartStable;
+			uint4 edgeStable   = uint4(leftPartStable,    topPartStable,      rightPartStable,       bottomPartStable);
+			uint4 cornerStable = uint4(leftTopPartStable, rightTopPartStable, rightBottomPartStable, leftBottomPartStable);
 
-			uint LTCStabilityCandidate = (stableValue == leftTopPartStable     || stableValue == topPartStable    || stableValue == leftPartStable)   * stableValue;
-			uint RTCStabilityCandidate = (stableValue == rightTopPartStable    || stableValue == rightPartStable  || stableValue == topPartStable)    * stableValue;
-			uint RBCStabilityCandidate = (stableValue == rightBottomPartStable || stableValue == bottomPartStable || stableValue == rightPartStable)  * stableValue;
-			uint LBCStabilityCandidate = (stableValue == leftBottomPartStable  || stableValue == leftPartStable   || stableValue == bottomPartStable) * stableValue;
+			uint4 emptyCornerStabilityCandidate = (edgeStable.xyzw  == edgeStable.yzwx                                                                                ) * edgeStable;
+			uint4 cornerStabilityCandidate      = (stableValue.xxxx == cornerStable.xyzw || stableValue.xxxx == edgeStable.xyzw || stableValue.xxxx == edgeStable.yzwx) * stableValue.xxxx;
 
-			uint resLTStable = max(LTStabilityCandidate, LTCStabilityCandidate);
-			uint resRTStable = max(RTStabilityCandidate, RTCStabilityCandidate);
-			uint resRBStable = max(RBStabilityCandidate, RBCStabilityCandidate);
-			uint resLBStable = max(LBStabilityCandidate, LBCStabilityCandidate);
+			uint4 resCornerStable = max(emptyCornerStabilityCandidate, cornerStabilityCandidate);
 
-			float stabilityPower   = (float)stableValue / (gDomainSize - 1.0f);
-			float LTStabilityPower = (float)resLTStable / (gDomainSize - 1.0f);
-			float RTStabilityPower = (float)resRTStable / (gDomainSize - 1.0f);
-			float RBStabilityPower = (float)resRBStable / (gDomainSize - 1.0f);
-			float LBStabilityPower = (float)resLBStable / (gDomainSize - 1.0f);
+			float  stabilityPower       = stableValue             * domainFactor;		
+			float4 cornerStabilityPower = (float4)resCornerStable * domainFactor;
 
-			float stablePower = stabilityPower * insideCircle + LTStabilityPower * insideTopLeft + RTStabilityPower * insideTopRight + RBStabilityPower * insideBottomRight + LBStabilityPower * insideBottomLeft;
+			float stablePower = stabilityPower * insideCircle + dot(cornerStabilityPower, insideCorner);
 			result            = lerp(result, colorStable, stablePower);
 		}
 	}

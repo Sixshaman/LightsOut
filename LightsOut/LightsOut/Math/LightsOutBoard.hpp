@@ -36,6 +36,7 @@ public:
 	void BoardIncDif(const LightsOutBoard& board1, const LightsOutBoard& board2);
 
 	void DomainRotate();
+	void DomainRotateNonZero();
 	void InvertValues();
 
 	bool IsNone() const;
