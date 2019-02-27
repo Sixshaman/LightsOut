@@ -48,6 +48,11 @@ void LightsOutBinaryBoardImpl::MulBoard(const LightsOutBinaryBoardImpl* right)
 	mBoard.set(0, mulBit);
 }
 
+void LightsOutBinaryBoardImpl::MulBoardComponentWise(const LightsOutBinaryBoardImpl* right)
+{
+	mBoard = mBoard & right->mBoard;
+}
+
 void LightsOutBinaryBoardImpl::IncDifBoard(const LightsOutBinaryBoardImpl* right1, const LightsOutBinaryBoardImpl* right2)
 {
 	mBoard &= (~(right1->mBoard ^ right2->mBoard));
@@ -61,10 +66,6 @@ bool LightsOutBinaryBoardImpl::IsEqual(const LightsOutBinaryBoardImpl* right)
 void LightsOutBinaryBoardImpl::Flip()
 {
 	mBoard.flip();
-}
-
-void LightsOutBinaryBoardImpl::RotateNonZero()
-{
 }
 
 bool LightsOutBinaryBoardImpl::IsNone() const

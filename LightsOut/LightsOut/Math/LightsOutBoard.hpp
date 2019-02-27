@@ -31,6 +31,8 @@ public:
 	void BoardSub(const LightsOutBoard& board);
 	void BoardMul(const LightsOutBoard& board);
 
+	void BoardMulComponentWise(const LightsOutBoard& board);
+
 	void BoardMulNum(uint16_t mul);
 	void BoardSubMul(const LightsOutBoard& board,  uint16_t mul);
 	void BoardIncDif(const LightsOutBoard& board1, const LightsOutBoard& board2);

@@ -11,10 +11,6 @@
 *
 */
 
-#define SafeRelease(x) {if(x) x->Release(); x = nullptr;}
-
-#define SafeDelete(x) {if(x) delete x; x = nullptr;}
-
 template<typename T> 
 inline void Clamp(T &x, T a, T b)
 {
@@ -22,14 +18,6 @@ inline void Clamp(T &x, T a, T b)
 }
 
 int32_t InvModGcdex(int32_t x, int32_t domainSize);
-
-inline void ShowErrorMessage(LPWSTR file, int line)
-{
-	WCHAR errorMsg[500];
-	swprintf_s(errorMsg, L"Problem in file %ls in line %d!", file, line);
-
-	MessageBox(nullptr, errorMsg, L"Error!", MB_OK);
-}
 
 class DXException
 {

@@ -1,6 +1,7 @@
 #include "FileDialog.hpp"
 #include "..\Util.hpp"
 #include <KnownFolders.h>
+#include <wrl\client.h>
 
 bool FileDialog::GetPictureToSave(HWND wnd, std::wstring& filename)
 {
@@ -28,121 +29,52 @@ bool FileDialog::FileSave(HWND wnd, std::wstring& filename, LPWSTR dialogTitle, 
 	return true;
 }
 
-bool FileDialog::FileDialogHandle(HWND wnd, std::wstring& filename, LPWSTR dialogTitle, const COMDLG_FILTERSPEC *fileTypes,
-								  uint32_t fileTypesSize, const CLSID dialogType)
+bool FileDialog::FileDialogHandle(HWND wnd, std::wstring& filename, LPWSTR dialogTitle, const COMDLG_FILTERSPEC *fileTypes, uint32_t fileTypesSize, const CLSID dialogType)
 {
-	IFileDialog *pFileDialog = nullptr;																	
-	if(FAILED(CoCreateInstance(dialogType, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pFileDialog)))) 
-	{
-		MessageBox(nullptr, L"Cannot create file dialog instance", L"Error", MB_OK);
-		return false;
-	}
+	Microsoft::WRL::ComPtr<IFileDialog> pFileDialog;
+	ThrowIfFailed(CoCreateInstance(dialogType, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pFileDialog)));
 
 	if(dialogType == CLSID_FileOpenDialog)
 	{
-		IShellItem *shellFolder = nullptr;															
-		if(FAILED(SHCreateItemInKnownFolder(FOLDERID_Pictures, 0, nullptr, IID_PPV_ARGS(&shellFolder))))
-		{
-			SafeRelease(pFileDialog);
-			SafeRelease(shellFolder);
-
-			MessageBox(nullptr, L"Cannot create shell item", L"Error", MB_OK);
-			return false;
-		}
-
-		if(FAILED(pFileDialog->SetFolder(shellFolder)))
-		{
-			SafeRelease(pFileDialog);
-			SafeRelease(shellFolder);
-
-			MessageBox(nullptr, L"Cannot set folder!", L"Error", MB_OK);
-			return false;
-		}
-
-		SafeRelease(shellFolder);
+		Microsoft::WRL::ComPtr<IShellItem> pShellFolder;
+		ThrowIfFailed(SHCreateItemInKnownFolder(FOLDERID_Pictures, 0, nullptr, IID_PPV_ARGS(&pShellFolder)));
+		ThrowIfFailed(pFileDialog->SetFolder(pShellFolder.Get()));
 	}
 
-	if(FAILED(pFileDialog->SetTitle(dialogTitle)))
-	{
-		SafeRelease(pFileDialog);
-
-		MessageBox(nullptr, L"Cannot set title!", L"Error", MB_OK);
-		return false;
-	}
-
-	if(FAILED(pFileDialog->SetFileTypes(fileTypesSize, fileTypes))) 
-	{
-		SafeRelease(pFileDialog);
-
-		MessageBox(nullptr, L"Cannot set file types!", L"Error", MB_OK);
-		return false;
-	}
-
-	if(FAILED(pFileDialog->SetFileTypeIndex(1)))
-	{
-		SafeRelease(pFileDialog);
-
-		MessageBox(nullptr, L"Cannot set file type index!", L"Error", MB_OK);
-		return false;
-	}
+	ThrowIfFailed(pFileDialog->SetTitle(dialogTitle));
+	ThrowIfFailed(pFileDialog->SetFileTypes(fileTypesSize, fileTypes));
+	ThrowIfFailed(pFileDialog->SetFileTypeIndex(1));
 
 	if(dialogType == CLSID_FileSaveDialog)
 	{
-		DWORD options;
-		if(FAILED(pFileDialog->GetOptions(&options)))
-		{
-			SafeRelease(pFileDialog);
-
-			MessageBox(nullptr, L"Cannot get options!", L"Error", MB_OK);
-			return false;
-		}
-
-		if(FAILED(pFileDialog->SetOptions(options | FOS_OVERWRITEPROMPT))) 
-		{
-			SafeRelease(pFileDialog);
-
-			MessageBox(nullptr, L"Cannot set options!", L"Error", MB_OK);
-			return false;
-		}
+		DWORD options = 0;
+		ThrowIfFailed(pFileDialog->GetOptions(&options));
+		ThrowIfFailed(pFileDialog->SetOptions(options | FOS_OVERWRITEPROMPT));
 	}
 
 	HRESULT hr = pFileDialog->Show(wnd);
-	if(FAILED(hr))
+	if(hr != HRESULT_FROM_WIN32(ERROR_CANCELLED))
+	{	
+		ThrowIfFailed(hr);
+	}
+	else
 	{
-		SafeRelease(pFileDialog);
-		
-		if(hr != 2147943623)
-		{
-			MessageBox(nullptr, L"Cannot show file dialog!", L"Error", MB_OK);
-		}
-
 		return false;
 	}
 
-	IShellItem *shellResult = nullptr;
-	if(FAILED(pFileDialog->GetResult(&shellResult)))
-	{
-		SafeRelease(pFileDialog);
-
-		MessageBox(nullptr, L"Cannot get result!", L"Error", MB_OK);
-		return false;
-	}
+	Microsoft::WRL::ComPtr<IShellItem> pShellResult;
+	ThrowIfFailed(pFileDialog->GetResult(&pShellResult));
 
 	PWSTR filePath = nullptr;
-	if(FAILED(shellResult->GetDisplayName(SIGDN_FILESYSPATH, &filePath)))
-	{
-		SafeRelease(shellResult);
-		SafeRelease(pFileDialog);
-
-		MessageBox(nullptr, L"Cannot get file name!", L"Error", MB_OK);
-		return false;
-	}
+	ThrowIfFailed(pShellResult->GetDisplayName(SIGDN_FILESYSPATH, &filePath));
 
 	filename = std::wstring(filePath);
 	CoTaskMemFree(filePath);
 
-	SafeRelease(shellResult);
-	SafeRelease(pFileDialog);
+	if(filename.size() <= 3 || filename.substr(filename.length() - 4, 4) != L".bmp")
+	{
+		filename += L".bmp";
+	}
 
 	return true;
 }

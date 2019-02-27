@@ -173,6 +173,29 @@ void LightsOutBoard::BoardMul(const LightsOutBoard& board)
 	}
 }
 
+void LightsOutBoard::BoardMulComponentWise(const LightsOutBoard& board)
+{
+	if (DomainSize() != board.DomainSize() || Size() != board.Size())
+	{
+		return;
+	}
+
+	if(DomainSize() == 2)
+	{
+		LightsOutBinaryBoardImpl* binLeft = reinterpret_cast<LightsOutBinaryBoardImpl*>(mpImpl);
+		LightsOutBinaryBoardImpl* binRight = reinterpret_cast<LightsOutBinaryBoardImpl*>(board.mpImpl);
+
+		binLeft->MulBoardComponentWise(binRight);
+	}
+	else
+	{
+		LightsOutNaryBoardImpl* nLeft = reinterpret_cast<LightsOutNaryBoardImpl*>(mpImpl);
+		LightsOutNaryBoardImpl* nRight = reinterpret_cast<LightsOutNaryBoardImpl*>(board.mpImpl);
+
+		nLeft->MulBoardComponentWise(nRight);
+	}
+}
+
 void LightsOutBoard::BoardMulNum(uint16_t mul)
 {
 	if(DomainSize() == 2)
@@ -244,7 +267,11 @@ void LightsOutBoard::DomainRotate()
 
 void LightsOutBoard::DomainRotateNonZero()
 {
-	mpImpl->RotateNonZero();
+	if(DomainSize() > 2)
+	{
+		LightsOutNaryBoardImpl* boardNaryImpl = reinterpret_cast<LightsOutNaryBoardImpl*>(mpImpl);
+		boardNaryImpl->RotateNonZero();
+	}
 }
 
 void LightsOutBoard::InvertValues()

@@ -5,14 +5,16 @@
 #include "..\Saving\FileDialog.hpp"
 #include "LightsOutBoardGen.hpp"
 
-#define IS_RANDOM_SOLVING       0x01 //Call LightsOutSolver::GetRandomTurn() instead of LightsOutSolver::GetFirstTurn()
-#define SHOW_SOLUTION           0x02 //Show the whole solution with special color
-#define SHOW_STABILITY          0x04 //Show the cell stability data
-#define IS_PERIOD_COUNTING      0x08 //Replace the board with the solution each tick
-#define IS_EIGVEC_COUNTING      0x10 //Replace the board with the special buffer each tick. After enough ticks you get the eigenvector of the board
-#define IS_PERIO4_COUNTING      0x20 //Replace the board with the solution of the solution of the solution of the solution each tick
-#define IS_PERIOD_BACK_COUNTING 0x40 //Replace the board with the anti-solution each tick
-#define DISPLAY_PERIOD_COUNT    0x80 //Display the period count when counting finished/stopped
+#define IS_RANDOM_SOLVING       0x001 //Call LightsOutSolver::GetRandomTurn() instead of LightsOutSolver::GetFirstTurn()
+#define SHOW_SOLUTION           0x002 //Show the whole solution with special color
+#define SHOW_INVERSE_SOLUTION   0x004 //Show the whole anti-solution with special color
+#define SHOW_STABILITY          0x008 //Show the cell stability data
+#define SHOW_LIT_STABILITY      0x010 //Show the cell stability data for lit cells
+#define IS_PERIOD_COUNTING      0x020 //Replace the board with the solution each tick
+#define IS_EIGVEC_COUNTING      0x040 //Replace the board with the special buffer each tick. After enough ticks you get the eigenvector of the board
+#define IS_PERIO4_COUNTING      0x080 //Replace the board with the solution of the solution of the solution of the solution each tick
+#define IS_PERIOD_BACK_COUNTING 0x100 //Replace the board with the anti-solution each tick
+#define DISPLAY_PERIOD_COUNT    0x200 //Display the period count when counting finished/stopped
 
 #define MENU_THEME_RED_EXPLOSION	  1001
 #define MENU_THEME_NEON_XXL			  1002
@@ -55,6 +57,7 @@
 #define HOTKEY_ID_INCREASE_DOMAIN_SIZE 3002
 
 #define HOTKEY_ID_ROTATE_NONZERO 4001
+#define HOTKEY_ID_STABLE_LIT     4002
 
 namespace
 {
@@ -188,7 +191,7 @@ bool LightsOutApp::InitMenu()
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_CHAINS,    L"Chains");
 	AppendMenu(MenuView, MF_MENUBREAK, 0, nullptr);
 
-	AppendMenu(MenuView, MF_STRING, MENU_VIEW_NO_EDGES, L"Disable edges");
+	AppendMenu(MenuView, MF_STRING, MENU_VIEW_NO_EDGES, L"Disable edges (Not implemented)");
 
 	AppendMenu(MenuFile, MF_STRING, MENU_FILE_SAVE_STATE,     L"Save state 1x   size...");
 	AppendMenu(MenuFile, MF_STRING, MENU_FILE_SAVE_STATE_4X,  L"Save state 4x   size...");
@@ -218,6 +221,7 @@ bool LightsOutApp::InitHotkeys()
 	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_INCREASE_DOMAIN_SIZE, MOD_CONTROL, VK_OEM_PLUS);
 
 	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_ROTATE_NONZERO, MOD_CONTROL, 'I');
+	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_STABLE_LIT,     MOD_CONTROL, 'A');
 
 	return result;
 }
@@ -408,6 +412,14 @@ void LightsOutApp::Update()
 		{
 			mRenderer->SetStabilityToDraw(mGame.GetStability());
 		}
+		else if(mFlags & SHOW_LIT_STABILITY)
+		{
+			LightsOutBoard stability = mGame.GetStability();
+			LightsOutBoard gameBoard = mGame.GetBoard();
+
+			stability.BoardMulComponentWise(gameBoard);
+			mRenderer->SetStabilityToDraw(stability);
+		}
 
 		if (mCountedBoard == solution && (mFlags & DISPLAY_PERIOD_COUNT))
 		{
@@ -425,9 +437,17 @@ void LightsOutApp::Update()
 		mGame.Reset(invsolution, RESET_FLAG_LEAVE_STABILITY);
 
 		mRenderer->SetBoardToDraw(mGame.GetBoard());
-		if (mFlags & SHOW_STABILITY)
+		if(mFlags & SHOW_STABILITY)
 		{
 			mRenderer->SetStabilityToDraw(mGame.GetStability());
+		}
+		else if(mFlags & SHOW_LIT_STABILITY)
+		{
+			LightsOutBoard stability = mGame.GetStability();
+			LightsOutBoard gameBoard = mGame.GetBoard();
+
+			stability.BoardMulComponentWise(gameBoard);
+			mRenderer->SetStabilityToDraw(stability);
 		}
 
 		if((mFlags & DISPLAY_PERIOD_COUNT) && mCountedBoard == invsolution)
@@ -502,11 +522,11 @@ void LightsOutApp::SaveBoard(uint32_t expectedSize)
 	mRenderer->DrawBgBoardToMemory(cellSize, mGame.GetSize(), boardData, boardTexRowPitch);
 
 	std::wstring filePath;
-	FileDialog::GetPictureToSave(mMainWnd, filePath);
-
-	uint32_t texSize = mGame.GetSize() * cellSize + 1;
-
-	LightsOutSaver::SaveBMP(filePath, &boardData[0], texSize, texSize, boardTexRowPitch);
+	if(FileDialog::GetPictureToSave(mMainWnd, filePath))
+	{
+		uint32_t texSize = mGame.GetSize() * cellSize + 1;
+		LightsOutSaver::SaveBMP(filePath, &boardData[0], texSize, texSize, boardTexRowPitch);
+	}
 
 	mRenderer->ResetBoardSize(mGame.GetSize());
 }
@@ -556,10 +576,23 @@ void LightsOutApp::OnMouseClick(WPARAM btnState, uint32_t xPos, uint32_t yPos)
 		mSolution = mSolver.GetSolution(mGame.GetBoard(), mGame.GetClickRule());
 		mRenderer->SetSolutionToDraw(mSolution);
 	}
+	else if(mFlags & SHOW_INVERSE_SOLUTION)
+	{
+		mSolution = mSolver.GetInverseSolution(mGame.GetBoard(), mGame.GetClickRule());
+		mRenderer->SetSolutionToDraw(mSolution);
+	}
 
 	if(mFlags & SHOW_STABILITY)
 	{
 		mRenderer->SetStabilityToDraw(mGame.GetStability());
+	}
+	else if(mFlags & SHOW_LIT_STABILITY)
+	{
+		LightsOutBoard stability = mGame.GetStability();
+		LightsOutBoard gameBoard = mGame.GetBoard();
+
+		stability.BoardMulComponentWise(gameBoard);
+		mRenderer->SetStabilityToDraw(stability);
 	}
 }
 
@@ -788,6 +821,11 @@ void LightsOutApp::ResetGameBoard(ResetMode resetMode, uint16_t gameSize, uint16
 			mSolution = mSolver.GetSolution(mGame.GetBoard(), mGame.GetClickRule());
 			mRenderer->SetSolutionToDraw(mSolution);
 		}
+		else if(mFlags & SHOW_INVERSE_SOLUTION)
+		{
+			mSolution = mSolver.GetInverseSolution(mGame.GetBoard(), mGame.GetClickRule());
+			mRenderer->SetSolutionToDraw(mSolution);
+		}
 	}
 	else if(resetMode == ResetMode::RESET_SOLUTION)
 	{
@@ -796,15 +834,36 @@ void LightsOutApp::ResetGameBoard(ResetMode resetMode, uint16_t gameSize, uint16
 			return;
 		}
 
-		if(mFlags & SHOW_SOLUTION)
+		if(mFlags & SHOW_SOLUTION || mFlags & SHOW_INVERSE_SOLUTION)
 		{
 			mGame.Reset(mSolution, RESET_FLAG_LEAVE_STABILITY);
-			mRenderer->SetStabilityToDraw(mGame.GetStability());
+			if(mFlags & SHOW_LIT_STABILITY)
+			{
+				LightsOutBoard stability = mGame.GetStability();
+				LightsOutBoard gameBoard = mGame.GetBoard();
+				stability.BoardMulComponentWise(gameBoard);
+
+				mRenderer->SetStabilityToDraw(stability);
+			}
+			else
+			{
+				mRenderer->SetStabilityToDraw(mGame.GetStability());
+			}
 			ShowSolution(false);
 		}
-		else if (mFlags & SHOW_STABILITY)
+		else if(mFlags & SHOW_STABILITY)
 		{
 			mGame.Reset(mGame.GetStability(), 0);
+			mRenderer->SetStabilityToDraw(mGame.GetStability());
+			ShowStability(false);
+		}
+		else if(mFlags & SHOW_LIT_STABILITY)
+		{
+			LightsOutBoard stability = mGame.GetStability();
+			LightsOutBoard gameBoard = mGame.GetBoard();
+			stability.BoardMulComponentWise(gameBoard);
+
+			mGame.Reset(stability, 0);
 			mRenderer->SetStabilityToDraw(mGame.GetStability());
 			ShowStability(false);
 		}
@@ -831,6 +890,11 @@ void LightsOutApp::ResetGameBoard(ResetMode resetMode, uint16_t gameSize, uint16
 		if(mFlags & SHOW_SOLUTION)
 		{
 			mSolution = mSolver.GetSolution(mGame.GetBoard(), mGame.GetClickRule());
+			mRenderer->SetSolutionToDraw(mSolution);
+		}
+		else if(mFlags & SHOW_INVERSE_SOLUTION)
+		{
+			mSolution = mSolver.GetInverseSolution(mGame.GetBoard(), mGame.GetClickRule());
 			mRenderer->SetSolutionToDraw(mSolution);
 		}
 	}
@@ -897,12 +961,13 @@ void LightsOutApp::ShowSolution(bool bShow)
 {
 	if(mWorkingMode != WorkingMode::LIT_BOARD)
 	{
-		DisableFlags(SHOW_SOLUTION);
+		DisableFlags(SHOW_SOLUTION | SHOW_INVERSE_SOLUTION);
 		return;
 	}
 
 	mTurnList.Clear();
 
+	DisableFlags(SHOW_INVERSE_SOLUTION);
 	if(bShow)
 	{
 		SetFlags(SHOW_SOLUTION);
@@ -924,15 +989,16 @@ void LightsOutApp::ShowInverseSolution(bool bShow)
 {
 	if(mWorkingMode != WorkingMode::LIT_BOARD)
 	{
-		DisableFlags(SHOW_SOLUTION);
+		DisableFlags(SHOW_SOLUTION | SHOW_INVERSE_SOLUTION);
 		return;
 	}
 
 	mTurnList.Clear();
 
-	if (bShow)
+	DisableFlags(SHOW_SOLUTION);
+	if(bShow)
 	{
-		SetFlags(SHOW_SOLUTION);
+		SetFlags(SHOW_INVERSE_SOLUTION);
 
 		mSolution = mSolver.GetInverseSolution(mGame.GetBoard(), mGame.GetClickRule());
 		mRenderer->SetSolutionToDraw(mSolution);
@@ -940,7 +1006,7 @@ void LightsOutApp::ShowInverseSolution(bool bShow)
 	}
 	else
 	{
-		DisableFlags(SHOW_SOLUTION);
+		DisableFlags(SHOW_INVERSE_SOLUTION);
 
 		mSolution.Reset(mGame.GetSize());
 		mRenderer->SetSolutionVisible(false);
@@ -951,12 +1017,13 @@ void LightsOutApp::ShowStability(bool bShow)
 {
 	if(mWorkingMode != WorkingMode::LIT_BOARD || mGame.GetDomainSize() > 2)
 	{
-		DisableFlags(SHOW_STABILITY);
+		DisableFlags(SHOW_STABILITY | SHOW_LIT_STABILITY);
 		return;
 	}
 
 	mTurnList.Clear();
 
+	DisableFlags(SHOW_LIT_STABILITY);
 	if (bShow)
 	{
 		SetFlags(SHOW_STABILITY);
@@ -969,6 +1036,35 @@ void LightsOutApp::ShowStability(bool bShow)
 	else
 	{
 		DisableFlags(SHOW_STABILITY);
+		mRenderer->SetStabilityVisible(false);
+	}
+}
+
+void LightsOutApp::ShowLitStability(bool bShow)
+{
+	if(mWorkingMode != WorkingMode::LIT_BOARD || mGame.GetDomainSize() > 2)
+	{
+		DisableFlags(SHOW_STABILITY | SHOW_LIT_STABILITY);
+		return;
+	}
+
+	mTurnList.Clear();
+
+	DisableFlags(SHOW_STABILITY);
+	if(bShow)
+	{
+		SetFlags(SHOW_LIT_STABILITY);
+		ShowSolution(false);
+
+		auto stability = mGame.GetStability();
+		stability.BoardMulComponentWise(mGame.GetBoard());
+
+		mRenderer->SetStabilityToDraw(stability);
+		mRenderer->SetStabilityVisible(true);
+	}
+	else
+	{
+		DisableFlags(SHOW_LIT_STABILITY);
 		mRenderer->SetStabilityVisible(false);
 	}
 }
@@ -1209,7 +1305,7 @@ void LightsOutApp::OnKeyReleased(WPARAM key)
 	}
 	case 'W':
 	{
-		ShowInverseSolution(!(mFlags & SHOW_SOLUTION));
+		ShowInverseSolution(!(mFlags & SHOW_INVERSE_SOLUTION));
 		break;
 	}
 	case 'A':
@@ -1308,6 +1404,11 @@ void LightsOutApp::OnHotkeyPresed(WPARAM hotkey)
 	case HOTKEY_ID_ROTATE_NONZERO:
 	{
 		ResetGameBoard(ResetMode::RESET_DOMAIN_ROTATE_NONZERO);
+		break;
+	}
+	case HOTKEY_ID_STABLE_LIT:
+	{
+		ShowLitStability(!(mFlags & SHOW_LIT_STABILITY));
 		break;
 	}
 	default:

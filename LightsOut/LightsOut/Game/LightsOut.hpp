@@ -91,6 +91,7 @@ private:
 	void ShowSolution(bool bShow);
 	void ShowInverseSolution(bool bShow);
 	void ShowStability(bool bShow);
+	void ShowLitStability(bool bShow);
 
 	void ShowQuietPatternCount();
 

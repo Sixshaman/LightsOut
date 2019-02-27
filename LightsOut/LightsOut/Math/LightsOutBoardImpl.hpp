@@ -21,8 +21,7 @@ public:
 
 	virtual void IncrementCell(uint16_t x, uint16_t y) = 0;
 
-	virtual void Flip()          = 0;
-	virtual void RotateNonZero() = 0;
+	virtual void Flip() = 0;
 
 	virtual bool IsNone() const = 0;
 
@@ -50,12 +49,13 @@ public:
 	void AddBoard(const LightsOutBinaryBoardImpl* right);
 	void MulBoard(const LightsOutBinaryBoardImpl* right);
 
+	void MulBoardComponentWise(const LightsOutBinaryBoardImpl* right);
+
 	void IncDifBoard(const LightsOutBinaryBoardImpl* right1, const LightsOutBinaryBoardImpl* right2);
 
 	bool IsEqual(const LightsOutBinaryBoardImpl* right);
 
-	void Flip()          override;
-	void RotateNonZero() override;
+	void Flip() override;
 
 	bool IsNone() const override;
 
@@ -84,6 +84,8 @@ public:
 	void SubBoard(const LightsOutNaryBoardImpl* right);
 	void MulBoard(const LightsOutNaryBoardImpl* right);
 
+	void MulBoardComponentWise(const LightsOutNaryBoardImpl* right);
+
 	void MulBoardNum(uint16_t mul);
 	void SubMulBoard(const LightsOutNaryBoardImpl* right, uint16_t mul);
 	void IncDifBoard(const LightsOutNaryBoardImpl* right1, const LightsOutNaryBoardImpl* right2);
@@ -91,7 +93,7 @@ public:
 	bool IsEqual(const LightsOutNaryBoardImpl* right);
 
 	void Flip()          override;
-	void RotateNonZero() override;
+	void RotateNonZero();
 	void InvertValues();
 
 	bool IsNone() const override;

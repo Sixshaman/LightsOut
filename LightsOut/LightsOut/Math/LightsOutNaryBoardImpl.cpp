@@ -66,6 +66,14 @@ void LightsOutNaryBoardImpl::MulBoard(const LightsOutNaryBoardImpl* right)
 	mBoard[0] = (uint16_t)sum;
 }
 
+void LightsOutNaryBoardImpl::MulBoardComponentWise(const LightsOutNaryBoardImpl * right)
+{
+	for(uint32_t i = 0; i < mBoard.size(); i++) //TODO: SSE
+	{
+		mBoard[i] = ((((int32_t)mBoard[i] * (int32_t)right->mBoard[i]) % mDomainSize) + mDomainSize) % mDomainSize;
+	}
+}
+
 void LightsOutNaryBoardImpl::MulBoardNum(uint16_t mul)
 {
 	for(uint32_t i = 0; i < mBoard.size(); i++) //TODO: SSE
@@ -90,7 +98,7 @@ void LightsOutNaryBoardImpl::SubMulBoard(const LightsOutNaryBoardImpl* right, ui
 
 void LightsOutNaryBoardImpl::IncDifBoard(const LightsOutNaryBoardImpl* right1, const LightsOutNaryBoardImpl* right2)
 {
-	//TODO: Implement this
+	//Possibly impossible to implement. We don't know the theory
 }
 
 bool LightsOutNaryBoardImpl::IsEqual(const LightsOutNaryBoardImpl* right)
