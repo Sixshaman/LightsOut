@@ -76,6 +76,7 @@ private:
 	void Update();
 
 	void SaveBoard(uint32_t expectedSize);
+	void SaveBoardSilent(uint32_t expectedSize, const std::wstring& filepath);
 
 	void OnMenuItem(WPARAM State);
 	void OnKeyReleased(WPARAM key);
@@ -110,6 +111,7 @@ private:
 	HINSTANCE mAppInst;
 	HWND	  mMainWnd;
 	HMENU     mMainMenu;
+	HACCEL    mAcceleratorsTable;
 
 	std::unique_ptr<LightsOutRenderer> mRenderer;
 

@@ -208,22 +208,45 @@ bool LightsOutApp::InitHotkeys()
 {
 	bool result = true;
 
-	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_CLICKMODE_REGULAR, MOD_CONTROL, 'R');
-	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_CLICKMODE_TOROID,  MOD_CONTROL, 'T');
-	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_CLICKMODE_CUSTOM,  MOD_CONTROL, 'M');
-	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_CLICKMODE_CUSTOR,  MOD_CONTROL, 'O');
+	std::vector<ACCEL> accels;
 
-	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_PERIOD_COUNT,      MOD_CONTROL, 'V');
-	//result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_PERIO4_COUNT,      MOD_CONTROL, 'X');
-	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_PERIOD_BACK_COUNT, MOD_CONTROL, 'Z');
+	accels.push_back(ACCEL());
+	accels.back().cmd   = HOTKEY_ID_CLICKMODE_REGULAR;
+	accels.back().fVirt = FCONTROL | FVIRTKEY;
+	accels.back().key   = 'R';
 
-	//result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_DECREASE_DOMAIN_SIZE, MOD_CONTROL, VK_OEM_MINUS);
-	//result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_INCREASE_DOMAIN_SIZE, MOD_CONTROL, VK_OEM_PLUS);
+	accels.push_back(ACCEL());
+	accels.back().cmd   = HOTKEY_ID_CLICKMODE_TOROID;
+	accels.back().fVirt = FCONTROL | FVIRTKEY;
+	accels.back().key   = 'T';
 
-	//result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_ROTATE_NONZERO, MOD_CONTROL, 'I');
-	//result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_STABLE_LIT,     MOD_CONTROL, 'A');
+	accels.push_back(ACCEL());
+	accels.back().cmd   = HOTKEY_ID_CLICKMODE_CUSTOM;
+	accels.back().fVirt = FCONTROL | FVIRTKEY;
+	accels.back().key   = 'M';
 
-	return result;
+	accels.push_back(ACCEL());
+	accels.back().cmd   = HOTKEY_ID_CLICKMODE_CUSTOR;
+	accels.back().fVirt = FCONTROL | FVIRTKEY;
+	accels.back().key   = 'O';
+
+	accels.push_back(ACCEL());
+	accels.back().cmd   = HOTKEY_ID_PERIOD_COUNT;
+	accels.back().fVirt = FCONTROL | FVIRTKEY;
+	accels.back().key   = 'V';
+
+	accels.push_back(ACCEL());
+	accels.back().cmd   = HOTKEY_ID_PERIOD_BACK_COUNT;
+	accels.back().fVirt = FCONTROL | FVIRTKEY;
+	accels.back().key   = 'Z';
+
+	accels.push_back(ACCEL());
+	accels.back().cmd   = HOTKEY_ID_STABLE_LIT;
+	accels.back().fVirt = FCONTROL | FVIRTKEY;
+	accels.back().key   = 'A';
+
+	mAcceleratorsTable = CreateAcceleratorTable(accels.data(), accels.size());
+	return mAcceleratorsTable != nullptr;
 }
 
 int LightsOutApp::RunApp()
@@ -234,8 +257,11 @@ int LightsOutApp::RunApp()
 	{
 		if(PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
 		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
+			if(!TranslateAccelerator(mMainWnd, mAcceleratorsTable, &msg))
+			{
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
 		}
 		else
 		{
@@ -537,6 +563,20 @@ void LightsOutApp::SaveBoard(uint32_t expectedSize)
 	mRenderer->ResetBoardSize(mGame.GetSize());
 }
 
+void LightsOutApp::SaveBoardSilent(uint32_t expectedSize, const std::wstring& filePath)
+{
+	uint32_t cellSize = (uint32_t)(ceilf(expectedSize / mGame.GetSize()) - 1);
+
+	std::vector<uint32_t> boardData;
+	uint32_t boardTexRowPitch;
+	mRenderer->DrawBgBoardToMemory(cellSize, mGame.GetSize(), boardData, boardTexRowPitch);
+
+	uint32_t texSize = mGame.GetSize() * cellSize + 1;
+	LightsOutSaver::SaveBMP(filePath, &boardData[0], texSize, texSize, boardTexRowPitch);
+
+	mRenderer->ResetBoardSize(mGame.GetSize());
+}
+
 void LightsOutApp::OnMouseClick(WPARAM btnState, uint32_t xPos, uint32_t yPos)
 {
 	uint32_t wndSize = mGame.GetSize() * mCellSize + 1;
@@ -632,7 +672,7 @@ void LightsOutApp::ChangeGameSize(int32_t newSize)
 		mRenderer->SetBoardToDraw(mGame.GetBoard());
 
 		wchar_t title[50];
-		swprintf_s(title, L"Lights out constructing %dx%d DOMAIN", newSize, newSize, mGame.GetDomainSize());
+		swprintf_s(title, L"Lights out constructing %dx%d", newSize, newSize, mGame.GetDomainSize());
 		SetWindowText(mMainWnd, title);
 
 		mWindowTitle = title;
@@ -1414,7 +1454,7 @@ void LightsOutApp::OnHotkeyPresed(WPARAM hotkey)
 	}
 	case HOTKEY_ID_STABLE_LIT:
 	{
-		//ShowLitStability(!(mFlags & SHOW_LIT_STABILITY));
+		ShowLitStability(!(mFlags & SHOW_LIT_STABILITY));
 		break;
 	}
 	default:
@@ -1444,7 +1484,19 @@ LRESULT CALLBACK LightsOutApp::AppProc(HWND hWnd, uint32_t message, WPARAM wPara
 		break;
 	case WM_COMMAND:
 	{
-		OnMenuItem(wParam);
+		if(HIWORD(wParam) == 0)
+		{
+			OnMenuItem(wParam);
+		}
+		else if(HIWORD(wParam) == 1)
+		{
+			if(!HotkeyHolding)
+			{
+				OnHotkeyPresed(LOWORD(wParam));
+			}
+			HotkeyHolding = true;
+		}
+
 		break;
 	}
 	case WM_KEYUP:
@@ -1458,15 +1510,6 @@ LRESULT CALLBACK LightsOutApp::AppProc(HWND hWnd, uint32_t message, WPARAM wPara
 		{
 			HotkeyHolding = false;
 		}
-		break;
-	}
-	case WM_HOTKEY:
-	{
-		if (!HotkeyHolding)
-		{
-			OnHotkeyPresed(wParam);
-		}
-		HotkeyHolding = true;
 		break;
 	}
 	}

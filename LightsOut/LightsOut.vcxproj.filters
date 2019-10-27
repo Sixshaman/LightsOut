@@ -194,4 +194,9 @@
       <Filter>Shaders\Compute</Filter>
     </FxCompile>
   </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="LightsOut.rc">
+      <Filter>Файлы ресурсов</Filter>
+    </ResourceCompile>
+  </ItemGroup>
 </Project>
