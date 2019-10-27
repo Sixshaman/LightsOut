@@ -3,6 +3,7 @@
 
 #include <d3d11.h>
 #include <Windows.h>
+#include <string>
 #include "LightsOutGame.hpp"
 #include "..\Math\LightsOutSolver.hpp"
 #include "LightsOutTurnList.hpp"

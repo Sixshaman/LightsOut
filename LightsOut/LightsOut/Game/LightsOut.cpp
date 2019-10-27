@@ -134,7 +134,7 @@ bool LightsOutApp::InitWnd()
 	mWndWidth = R.right - R.left;
 	mWndHeight = R.bottom - R.top;
 	
-	mWindowTitle = L"Lights out 15x15 DOMAIN 2";
+	mWindowTitle = L"Lights out 15x15";
 
 	mMainWnd = CreateWindow(L"LightsOutWindow", mWindowTitle.c_str(), wndStyle, 0, 0,
 							mWndWidth, mWndHeight, nullptr, nullptr, mAppInst, 0);
@@ -157,10 +157,10 @@ bool LightsOutApp::InitMenu()
 
 	HMENU MenuTheme     = CreatePopupMenu();
 	HMENU MenuView      = CreatePopupMenu();
-	HMENU MenuClickRule = CreatePopupMenu();
+	//HMENU MenuClickRule = CreatePopupMenu();
 	HMENU MenuFile      = CreatePopupMenu();
 
-	if(!mMainMenu || !MenuTheme || !MenuView || !MenuClickRule || !MenuFile)
+	if(!mMainMenu || !MenuTheme || !MenuView || /*!MenuClickRule ||*/ !MenuFile)
 	{
 		return false;
 	}
@@ -171,11 +171,11 @@ bool LightsOutApp::InitMenu()
 
 	AppendMenu(MenuTheme, MF_STRING, MENU_THEME_RED_EXPLOSION,		L"Red explosion");
 	AppendMenu(MenuTheme, MF_STRING, MENU_THEME_NEON_XXL,			L"Neon XXL");
-	AppendMenu(MenuTheme, MF_STRING, MENU_THEME_AUTUMM,             L"AUTUMM");
+	AppendMenu(MenuTheme, MF_STRING, MENU_THEME_AUTUMM,             L"AUTUMN");
 	AppendMenu(MenuTheme, MF_STRING, MENU_THEME_CREAMED_STRAWBERRY, L"Creamed strawberry");
 	AppendMenu(MenuTheme, MF_STRING, MENU_THEME_HARD_TO_SEE,	    L"Hard to see");
 	AppendMenu(MenuTheme, MF_STRING, MENU_THEME_BLACK_AND_WHITE,	L"Black and white");
-	AppendMenu(MenuTheme, MF_STRING, MENU_THEME_PETYA,              L"Petya");
+	AppendMenu(MenuTheme, MF_STRING, MENU_THEME_PETYA,              L"Pietia");
 	AppendMenu(MenuTheme, MF_MENUBREAK, 0, nullptr);
 
 	AppendMenu(MenuTheme, MF_STRING, MENU_THEME_EDGES_LIKE_OFF,	   L"Edges like unlit");
@@ -185,13 +185,13 @@ bool LightsOutApp::InitMenu()
 
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_SQUARES,   L"Squares");
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_CIRCLES,   L"Circles");
-	AppendMenu(MenuView, MF_STRING, MENU_VIEW_DIAMONDS,  L"Diamonds");
-	AppendMenu(MenuView, MF_STRING, MENU_VIEW_BEAMS,     L"Beams");
+	//AppendMenu(MenuView, MF_STRING, MENU_VIEW_DIAMONDS,  L"Diamonds");
+	//AppendMenu(MenuView, MF_STRING, MENU_VIEW_BEAMS,     L"Beams");
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_RAINDROPS, L"Raindrops");
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_CHAINS,    L"Chains");
-	AppendMenu(MenuView, MF_MENUBREAK, 0, nullptr);
+	//AppendMenu(MenuView, MF_MENUBREAK, 0, nullptr);
 
-	AppendMenu(MenuView, MF_STRING, MENU_VIEW_NO_EDGES, L"Disable edges (Not implemented)");
+	//AppendMenu(MenuView, MF_STRING, MENU_VIEW_NO_EDGES, L"Disable edges (Not implemented)");
 
 	AppendMenu(MenuFile, MF_STRING, MENU_FILE_SAVE_STATE,     L"Save state 1x   size...");
 	AppendMenu(MenuFile, MF_STRING, MENU_FILE_SAVE_STATE_4X,  L"Save state 4x   size...");
@@ -214,14 +214,14 @@ bool LightsOutApp::InitHotkeys()
 	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_CLICKMODE_CUSTOR,  MOD_CONTROL, 'O');
 
 	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_PERIOD_COUNT,      MOD_CONTROL, 'V');
-	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_PERIO4_COUNT,      MOD_CONTROL, 'X');
+	//result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_PERIO4_COUNT,      MOD_CONTROL, 'X');
 	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_PERIOD_BACK_COUNT, MOD_CONTROL, 'Z');
 
-	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_DECREASE_DOMAIN_SIZE, MOD_CONTROL, VK_OEM_MINUS);
-	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_INCREASE_DOMAIN_SIZE, MOD_CONTROL, VK_OEM_PLUS);
+	//result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_DECREASE_DOMAIN_SIZE, MOD_CONTROL, VK_OEM_MINUS);
+	//result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_INCREASE_DOMAIN_SIZE, MOD_CONTROL, VK_OEM_PLUS);
 
-	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_ROTATE_NONZERO, MOD_CONTROL, 'I');
-	result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_STABLE_LIT,     MOD_CONTROL, 'A');
+	//result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_ROTATE_NONZERO, MOD_CONTROL, 'I');
+	//result = result && RegisterHotKey(mMainWnd, HOTKEY_ID_STABLE_LIT,     MOD_CONTROL, 'A');
 
 	return result;
 }
@@ -500,16 +500,22 @@ void LightsOutApp::Update()
 
 	if(mFlags & IS_EIGVEC_COUNTING)
 	{
-		mGame.Click(mEigenvecTurn.boardX, mEigenvecTurn.boardY);
+		LightsOutBoard currBoard = mGame.GetBoard();
+		mGame.GetClickRule()->Click(&currBoard, mEigenvecTurn.boardX, mEigenvecTurn.boardY);
 
-		LightsOutBoard solution = mSolver.GetSolution(mGame.GetBoard(), mGame.GetClickRule());
-		if(mGame.GetBoard() == solution)
+		LightsOutBoard solution = mSolver.GetSolution(currBoard, mGame.GetClickRule());
+		if(currBoard == solution)
 		{
 			mFlags &= ~IS_EIGVEC_COUNTING;
 		}
 
 		mGame.Reset(solution, RESET_FLAG_LEAVE_STABILITY);
 		mRenderer->SetBoardToDraw(mGame.GetBoard());
+
+		if(mFlags & SHOW_STABILITY)
+		{
+			mRenderer->SetStabilityToDraw(mGame.GetStability());
+		}
 	}
 }
 
@@ -612,7 +618,7 @@ void LightsOutApp::ChangeGameSize(int32_t newSize)
 		ResetGameBoard(ResetMode::RESET_SOLVABLE_RANDOM, newSize);
 
 		wchar_t title[50];
-		swprintf_s(title, L"Lights out %dx%d DOMAIN %d", newSize, newSize, mGame.GetDomainSize());
+		swprintf_s(title, L"Lights out %dx%d", newSize, newSize, mGame.GetDomainSize());
 		SetWindowText(mMainWnd, title);
 
 		mWindowTitle = title;
@@ -675,7 +681,7 @@ void LightsOutApp::ChangeDomainSize(int32_t newDomainSize)
 	mGame.SetClickRuleRegular();
 
 	wchar_t title[50];
-	swprintf_s(title, L"Lights out %dx%d DOMAIN %d", mGame.GetSize(), mGame.GetSize(), newDomainSize);
+	swprintf_s(title, L"Lights out %dx%d", mGame.GetSize(), mGame.GetSize(), newDomainSize);
 	SetWindowText(mMainWnd, title);
 
 	mWindowTitle = title;
@@ -1326,8 +1332,8 @@ void LightsOutApp::OnKeyReleased(WPARAM key)
 	}
 	case 'X':
 	{
-		const uint32_t countFlags = IS_PERIOD_COUNTING | IS_PERIO4_COUNTING | IS_PERIOD_BACK_COUNTING;
-		ChangeCountingMode(!(mFlags & countFlags) ? CountingMode::COUNT_SOLUTION_PERIOD_4X : CountingMode::COUNT_NONE, false);
+		//const uint32_t countFlags = IS_PERIOD_COUNTING | IS_PERIO4_COUNTING | IS_PERIOD_BACK_COUNTING;
+		//ChangeCountingMode(!(mFlags & countFlags) ? CountingMode::COUNT_SOLUTION_PERIOD_4X : CountingMode::COUNT_NONE, false);
 		break;
 	}
 	case 'Z':
@@ -1381,8 +1387,8 @@ void LightsOutApp::OnHotkeyPresed(WPARAM hotkey)
 	}
 	case HOTKEY_ID_PERIO4_COUNT:
 	{
-		const uint32_t countFlags = IS_PERIOD_COUNTING | IS_PERIO4_COUNTING | IS_PERIOD_BACK_COUNTING;
-		ChangeCountingMode(!(mFlags & countFlags) ? CountingMode::COUNT_SOLUTION_PERIOD_4X : CountingMode::COUNT_NONE, true);
+		//const uint32_t countFlags = IS_PERIOD_COUNTING | IS_PERIO4_COUNTING | IS_PERIOD_BACK_COUNTING;
+		//ChangeCountingMode(!(mFlags & countFlags) ? CountingMode::COUNT_SOLUTION_PERIOD_4X : CountingMode::COUNT_NONE, true);
 		break;
 	}
 	case HOTKEY_ID_PERIOD_BACK_COUNT:
@@ -1393,22 +1399,22 @@ void LightsOutApp::OnHotkeyPresed(WPARAM hotkey)
 	}
 	case HOTKEY_ID_DECREASE_DOMAIN_SIZE:
 	{
-		ChangeDomainSize((int32_t)mGame.GetDomainSize() - 1);
+		//ChangeDomainSize((int32_t)mGame.GetDomainSize() - 1);
 		break;
 	}
 	case HOTKEY_ID_INCREASE_DOMAIN_SIZE:
 	{
-		ChangeDomainSize((int32_t)mGame.GetDomainSize() + 1);
+		//ChangeDomainSize((int32_t)mGame.GetDomainSize() + 1);
 		break;
 	}
 	case HOTKEY_ID_ROTATE_NONZERO:
 	{
-		ResetGameBoard(ResetMode::RESET_DOMAIN_ROTATE_NONZERO);
+		//ResetGameBoard(ResetMode::RESET_DOMAIN_ROTATE_NONZERO);
 		break;
 	}
 	case HOTKEY_ID_STABLE_LIT:
 	{
-		ShowLitStability(!(mFlags & SHOW_LIT_STABILITY));
+		//ShowLitStability(!(mFlags & SHOW_LIT_STABILITY));
 		break;
 	}
 	default:

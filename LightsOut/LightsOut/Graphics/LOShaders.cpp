@@ -14,7 +14,7 @@ ComputeBoardShaders::ComputeBoardShaders(ID3D11Device *device)
 #if defined(DEBUG) || defined(_DEBUG)
 	ShaderPath = LR"(..\Debug\Shaders\Compute\)";
 #elif defined(NDEBUG)
-	ShaderPath = LR"(..\Release\Shaders\Compute\)";
+	ShaderPath = LR"(Shaders\Compute\)";
 #elif defined(PRODUCT)
 	ShaderPath = LR"(Shaders\Compute\)";
 #endif
@@ -25,11 +25,11 @@ ComputeBoardShaders::ComputeBoardShaders(ID3D11Device *device)
 	ThrowIfFailed(D3DReadFileToBlob((ShaderPath + L"ComputeBoardCircles.cso").c_str(), shaderBlob.GetAddressOf()));
 	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mComputeBoardCirclesShader.GetAddressOf()));
 
-	ThrowIfFailed(D3DReadFileToBlob((ShaderPath + L"ComputeBoardDiamonds.cso").c_str(), shaderBlob.GetAddressOf()));
-	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mComputeBoardDiamondsShader.GetAddressOf()));
+	//ThrowIfFailed(D3DReadFileToBlob((ShaderPath + L"ComputeBoardDiamonds.cso").c_str(), shaderBlob.GetAddressOf()));
+	//ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mComputeBoardDiamondsShader.GetAddressOf()));
 
-	ThrowIfFailed(D3DReadFileToBlob((ShaderPath + L"ComputeBoardBeams.cso").c_str(), shaderBlob.GetAddressOf()));
-	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mComputeBoardBeamsShader.GetAddressOf()));
+	//ThrowIfFailed(D3DReadFileToBlob((ShaderPath + L"ComputeBoardBeams.cso").c_str(), shaderBlob.GetAddressOf()));
+	//ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mComputeBoardBeamsShader.GetAddressOf()));
 
 	ThrowIfFailed(D3DReadFileToBlob((ShaderPath + L"ComputeBoardRaindrops.cso").c_str(), shaderBlob.GetAddressOf()));
 	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mComputeBoardRaindopsShader.GetAddressOf()));
@@ -37,23 +37,23 @@ ComputeBoardShaders::ComputeBoardShaders(ID3D11Device *device)
 	ThrowIfFailed(D3DReadFileToBlob((ShaderPath + L"ComputeBoardChains.cso").c_str(), shaderBlob.GetAddressOf()));
 	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mComputeBoardChainsShader.GetAddressOf()));
 
-	ThrowIfFailed(D3DReadFileToBlob((ShaderPath + L"ComputeEveryBoard.cso").c_str(), shaderBlob.GetAddressOf()));
-	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mComputeEveryBoardShader.GetAddressOf()));
+	//ThrowIfFailed(D3DReadFileToBlob((ShaderPath + L"ComputeEveryBoard.cso").c_str(), shaderBlob.GetAddressOf()));
+	//ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mComputeEveryBoardShader.GetAddressOf()));
 
-	ThrowIfFailed(D3DReadFileToBlob((ShaderPath + L"ComputeEveryBoardCircles.cso").c_str(), shaderBlob.GetAddressOf()));
-	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mComputeEveryBoardCirclesShader.GetAddressOf()));
-	
-	ThrowIfFailed(D3DReadFileToBlob((ShaderPath + L"ComputeEveryBoardDiamonds.cso").c_str(), shaderBlob.GetAddressOf()));
-	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mComputeEveryBoardDiamondsShader.GetAddressOf()));
+	//ThrowIfFailed(D3DReadFileToBlob((ShaderPath + L"ComputeEveryBoardCircles.cso").c_str(), shaderBlob.GetAddressOf()));
+	//ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mComputeEveryBoardCirclesShader.GetAddressOf()));
+	//
+	//ThrowIfFailed(D3DReadFileToBlob((ShaderPath + L"ComputeEveryBoardDiamonds.cso").c_str(), shaderBlob.GetAddressOf()));
+	//ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mComputeEveryBoardDiamondsShader.GetAddressOf()));
 
-	ThrowIfFailed(D3DReadFileToBlob((ShaderPath + L"ComputeEveryBoardBeams.cso").c_str(), shaderBlob.GetAddressOf()));
-	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mComputeEveryBoardBeamsShader.GetAddressOf()));
+	//ThrowIfFailed(D3DReadFileToBlob((ShaderPath + L"ComputeEveryBoardBeams.cso").c_str(), shaderBlob.GetAddressOf()));
+	//ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mComputeEveryBoardBeamsShader.GetAddressOf()));
 
-	ThrowIfFailed(D3DReadFileToBlob((ShaderPath + L"ComputeEveryBoardRaindrops.cso").c_str(), shaderBlob.GetAddressOf()));
-	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mComputeEveryBoardRaindropsShader.GetAddressOf()));
-	
-	ThrowIfFailed(D3DReadFileToBlob((ShaderPath + L"ComputeEveryBoardChains.cso").c_str(), shaderBlob.GetAddressOf()));
-	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mComputeEveryBoardChainsShader.GetAddressOf()));
+	//ThrowIfFailed(D3DReadFileToBlob((ShaderPath + L"ComputeEveryBoardRaindrops.cso").c_str(), shaderBlob.GetAddressOf()));
+	//ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mComputeEveryBoardRaindropsShader.GetAddressOf()));
+	//
+	//ThrowIfFailed(D3DReadFileToBlob((ShaderPath + L"ComputeEveryBoardChains.cso").c_str(), shaderBlob.GetAddressOf()));
+	//ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mComputeEveryBoardChainsShader.GetAddressOf()));
 }
 
 ComputeBoardShaders::~ComputeBoardShaders()
@@ -138,7 +138,7 @@ DrawScreenShaders::DrawScreenShaders(ID3D11Device *device)
 #if defined(DEBUG) || defined(_DEBUG)
 	ShaderPath = LR"(..\Debug\Shaders\Render\)";
 #elif defined(NDEBUG)
-	ShaderPath = LR"(..\Release\Shaders\Render\)";
+	ShaderPath = LR"(Shaders\Render\)";
 #elif defined(PRODUCT)
 	ShaderPath = LR"(Shaders\Render\)";
 #endif
