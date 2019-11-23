@@ -74,6 +74,12 @@ private:
 	bool InitHotkeys();
 
 	void Update();
+	void Special(); //For internal purposes
+
+	void PeriodCountTick();
+	void PeriodBackCountTick();
+	void Perio4CountTick();
+	void EigvecCountTick();
 
 	void SaveBoard(uint32_t expectedSize);
 	void SaveBoardSilent(uint32_t expectedSize, const std::wstring& filepath);

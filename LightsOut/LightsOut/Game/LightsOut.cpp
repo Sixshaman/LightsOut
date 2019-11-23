@@ -1,6 +1,8 @@
 #include "LightsOut.hpp"
 #include "..\Util.hpp"
 #include <WindowsX.h>
+#include <algorithm>
+#include <fstream>
 #include "..\Saving\LOSaver.hpp"
 #include "..\Saving\FileDialog.hpp"
 #include "LightsOutBoardGen.hpp"
@@ -43,6 +45,8 @@
 #define MENU_FILE_SAVE_STATE_16X	  3003
 #define MENU_FILE_SAVE_STATE_05X	  3004
 #define MENU_FILE_SAVE_STATE_01X	  3005
+
+#define MENU_SPECIAL 4001
 
 #define HOTKEY_ID_CLICKMODE_REGULAR 1001
 #define HOTKEY_ID_CLICKMODE_TOROID  1002
@@ -134,7 +138,7 @@ bool LightsOutApp::InitWnd()
 	mWndWidth = R.right - R.left;
 	mWndHeight = R.bottom - R.top;
 	
-	mWindowTitle = L"Lights out 15x15";
+	mWindowTitle = L"Lights out 15x15 DOMAIN 2";
 
 	mMainWnd = CreateWindow(L"LightsOutWindow", mWindowTitle.c_str(), wndStyle, 0, 0,
 							mWndWidth, mWndHeight, nullptr, nullptr, mAppInst, 0);
@@ -155,19 +159,10 @@ bool LightsOutApp::InitMenu()
 {
 	mMainMenu = CreateMenu();
 
-	HMENU MenuTheme     = CreatePopupMenu();
-	HMENU MenuView      = CreatePopupMenu();
-	//HMENU MenuClickRule = CreatePopupMenu();
-	HMENU MenuFile      = CreatePopupMenu();
+	//=============================================================================================
 
-	if(!mMainMenu || !MenuTheme || !MenuView || /*!MenuClickRule ||*/ !MenuFile)
-	{
-		return false;
-	}
-
-	AppendMenu(mMainMenu, MF_POPUP | MF_STRING, (uint32_t)MenuTheme,     L"&Theme");
-	AppendMenu(mMainMenu, MF_POPUP | MF_STRING, (uint32_t)MenuView,      L"&View");
-	AppendMenu(mMainMenu, MF_POPUP | MF_STRING, (uint32_t)MenuFile,      L"&File");
+	HMENU MenuTheme = CreatePopupMenu();
+	AppendMenu(mMainMenu, MF_POPUP | MF_STRING, (uint32_t)MenuTheme, L"&Theme");
 
 	AppendMenu(MenuTheme, MF_STRING, MENU_THEME_RED_EXPLOSION,		L"Red explosion");
 	AppendMenu(MenuTheme, MF_STRING, MENU_THEME_NEON_XXL,			L"Neon XXL");
@@ -183,21 +178,41 @@ bool LightsOutApp::InitMenu()
 	AppendMenu(MenuTheme, MF_STRING, MENU_THEME_EDGES_LIKE_SOLVED, L"Edges like solution");
 	AppendMenu(MenuTheme, MF_STRING, MENU_THEME_EDGES_DIMMED,      L"Dimmed edges");
 
+	//=============================================================================================
+
+	HMENU MenuView = CreatePopupMenu();
+	AppendMenu(mMainMenu, MF_POPUP | MF_STRING, (uint32_t)MenuView, L"&View");
+
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_SQUARES,   L"Squares");
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_CIRCLES,   L"Circles");
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_DIAMONDS,  L"Diamonds");
 	//AppendMenu(MenuView, MF_STRING, MENU_VIEW_BEAMS,     L"Beams");
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_RAINDROPS, L"Raindrops");
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_CHAINS,    L"Chains");
+
 	//AppendMenu(MenuView, MF_MENUBREAK, 0, nullptr);
 
 	//AppendMenu(MenuView, MF_STRING, MENU_VIEW_NO_EDGES, L"Disable edges (Not implemented)");
+
+	//=============================================================================================
+
+	HMENU MenuFile = CreatePopupMenu();
+	AppendMenu(mMainMenu, MF_POPUP | MF_STRING, (uint32_t)MenuFile, L"&File");
 
 	AppendMenu(MenuFile, MF_STRING, MENU_FILE_SAVE_STATE,     L"Save state 1x   size...");
 	AppendMenu(MenuFile, MF_STRING, MENU_FILE_SAVE_STATE_4X,  L"Save state 4x   size...");
 	AppendMenu(MenuFile, MF_STRING, MENU_FILE_SAVE_STATE_16X, L"Save state 16x  size...");
 	AppendMenu(MenuFile, MF_STRING, MENU_FILE_SAVE_STATE_05X, L"Save state 0.5x size...");
 	AppendMenu(MenuFile, MF_STRING, MENU_FILE_SAVE_STATE_01X, L"Save state 0.1x size...");
+
+	//=============================================================================================
+
+	//HMENU MenuSpecial = CreatePopupMenu();
+	//AppendMenu(mMainMenu, MF_POPUP | MF_STRING, (uint32_t)MenuSpecial, L"&Special");
+
+	//AppendMenu(MenuSpecial, MF_STRING, MENU_SPECIAL, L"Special...");
+
+	//=============================================================================================
 
 	SetMenu(mMainWnd, mMainMenu);
 
@@ -246,20 +261,20 @@ bool LightsOutApp::InitHotkeys()
 	accels.back().key   = 'X';
 
 	accels.push_back(ACCEL());
-	accels.back().cmd   = HOTKEY_ID_INCREASE_DOMAIN_SIZE;
+	accels.back().cmd = HOTKEY_ID_INCREASE_DOMAIN_SIZE;
 	accels.back().fVirt = FCONTROL | FVIRTKEY;
-	accels.back().key   = VK_OEM_PLUS;
+	accels.back().key = VK_OEM_PLUS;
 
 	accels.push_back(ACCEL());
-	accels.back().cmd   = HOTKEY_ID_DECREASE_DOMAIN_SIZE;
+	accels.back().cmd = HOTKEY_ID_DECREASE_DOMAIN_SIZE;
 	accels.back().fVirt = FCONTROL | FVIRTKEY;
-	accels.back().key   = VK_OEM_MINUS;
+	accels.back().key = VK_OEM_MINUS;
 
 	accels.push_back(ACCEL());
-	accels.back().cmd   = HOTKEY_ID_ROTATE_NONZERO;
+	accels.back().cmd = HOTKEY_ID_ROTATE_NONZERO;
 	accels.back().fVirt = FCONTROL | FVIRTKEY;
-	accels.back().key   = 'I';
-
+	accels.back().key = 'I';
+	
 	accels.push_back(ACCEL());
 	accels.back().cmd   = HOTKEY_ID_STABLE_LIT;
 	accels.back().fVirt = FCONTROL | FVIRTKEY;
@@ -411,6 +426,11 @@ void LightsOutApp::OnMenuItem(WPARAM State)
 		SaveBoard(EXPECTED_WND_SIZE / 10);
 		break;
 	}
+	case MENU_SPECIAL:
+	{
+		Special();
+		break;
+	}
 	}
 }
 
@@ -445,73 +465,110 @@ void LightsOutApp::Update()
 	}
 
 	//Soiution period is being counted, redraw the board with the derived board.
-	//Stop if we reached the first board.
+	//Stop if we've reached the first board.
 	if(mFlags & IS_PERIOD_COUNTING)
 	{
-		mPeriodCount++;
-
-		LightsOutBoard solution = mSolver.GetSolution(mGame.GetBoard(), mGame.GetClickRule());
-		mGame.Reset(solution, RESET_FLAG_LEAVE_STABILITY);
-
-		mRenderer->SetBoardToDraw(mGame.GetBoard());
-		if(mFlags & SHOW_STABILITY)
-		{
-			mRenderer->SetStabilityToDraw(mGame.GetStability());
-		}
-		else if(mFlags & SHOW_LIT_STABILITY)
-		{
-			LightsOutBoard stability = mGame.GetStability();
-			LightsOutBoard gameBoard = mGame.GetBoard();
-
-			stability.BoardMulComponentWise(gameBoard);
-			mRenderer->SetStabilityToDraw(stability);
-		}
-
-		if (mCountedBoard == solution && (mFlags & DISPLAY_PERIOD_COUNT))
-		{
-			DisableFlags(IS_PERIOD_COUNTING); //Next tick we'll show the messagebox
-		}
+		PeriodCountTick();
 	}
 
 	//Soiution period is being counted backwards, redraw the board with the derived board.
-	//Stop if we reached the first board.
+	//Stop if we've reached the first board.
 	if(mFlags & IS_PERIOD_BACK_COUNTING)
 	{
-		mPeriodCount++;
-
-		LightsOutBoard invsolution = mSolver.GetInverseSolution(mGame.GetBoard(), mGame.GetClickRule());
-		mGame.Reset(invsolution, RESET_FLAG_LEAVE_STABILITY);
-
-		mRenderer->SetBoardToDraw(mGame.GetBoard());
-		if(mFlags & SHOW_STABILITY)
-		{
-			mRenderer->SetStabilityToDraw(mGame.GetStability());
-		}
-		else if(mFlags & SHOW_LIT_STABILITY)
-		{
-			LightsOutBoard stability = mGame.GetStability();
-			LightsOutBoard gameBoard = mGame.GetBoard();
-
-			stability.BoardMulComponentWise(gameBoard);
-			mRenderer->SetStabilityToDraw(stability);
-		}
-
-		if((mFlags & DISPLAY_PERIOD_COUNT) && mCountedBoard == invsolution)
-		{
-			DisableFlags(IS_PERIOD_BACK_COUNTING); //Next tick we'll show the messagebox
-		}
+		PeriodBackCountTick();
 	}
 
+	//Soiution period is being counted in steps of 4 interchanges, redraw the board with the derived board.
+	//Stop if we've reached the first board.
 	if(mFlags & IS_PERIO4_COUNTING)
 	{
-		LightsOutBoard solution = mGame.GetBoard();
+		Perio4CountTick();
+	}
+
+	//Eigenvector is being counted, redraw the board with the derived board.
+	//Stop if we've reached the eigenvector.
+	if(mFlags & IS_EIGVEC_COUNTING)
+	{
+		EigvecCountTick();
+	}
+}
+
+void LightsOutApp::Special() //Custom script
+{
+}
+
+void LightsOutApp::PeriodCountTick()
+{
+	mPeriodCount++;
+
+	LightsOutBoard solution = mSolver.GetSolution(mGame.GetBoard(), mGame.GetClickRule());
+	mGame.Reset(solution, RESET_FLAG_LEAVE_STABILITY);
+
+	mRenderer->SetBoardToDraw(mGame.GetBoard());
+	if(mFlags & SHOW_STABILITY)
+	{
+		mRenderer->SetStabilityToDraw(mGame.GetStability());
+	}
+	else if(mFlags & SHOW_LIT_STABILITY)
+	{
+		LightsOutBoard stability = mGame.GetStability();
+		LightsOutBoard gameBoard = mGame.GetBoard();
+
+		stability.BoardMulComponentWise(gameBoard);
+		mRenderer->SetStabilityToDraw(stability);
+	}
+
+	if (mCountedBoard == solution && (mFlags & DISPLAY_PERIOD_COUNT))
+	{
+		DisableFlags(IS_PERIOD_COUNTING); //Next tick we'll show the messagebox
+	}
+}
+
+void LightsOutApp::PeriodBackCountTick()
+{
+	mPeriodCount++;
+
+	LightsOutBoard invsolution = mSolver.GetInverseSolution(mGame.GetBoard(), mGame.GetClickRule());
+	mGame.Reset(invsolution, RESET_FLAG_LEAVE_STABILITY);
+
+	mRenderer->SetBoardToDraw(mGame.GetBoard());
+	if (mFlags & SHOW_STABILITY)
+	{
+		mRenderer->SetStabilityToDraw(mGame.GetStability());
+	}
+	else if (mFlags & SHOW_LIT_STABILITY)
+	{
+		LightsOutBoard stability = mGame.GetStability();
+		LightsOutBoard gameBoard = mGame.GetBoard();
+
+		stability.BoardMulComponentWise(gameBoard);
+		mRenderer->SetStabilityToDraw(stability);
+	}
+
+	if((mFlags & DISPLAY_PERIOD_COUNT) && mCountedBoard == invsolution)
+	{
+		DisableFlags(IS_PERIOD_BACK_COUNTING); //Next tick we'll show the messagebox
+	}
+}
+
+void LightsOutApp::Perio4CountTick()
+{
+	LightsOutBoard solution = mGame.GetBoard();
 		
+	mPeriodCount++;
+	solution = mSolver.GetSolution(solution, mGame.GetClickRule());
+	if((mFlags & DISPLAY_PERIOD_COUNT) && mCountedBoard == solution)
+	{
+		DisableFlags(IS_PERIO4_COUNTING); //Next tick we'll show the messagebox
+    }
+	else
+	{
 		mPeriodCount++;
 		solution = mSolver.GetSolution(solution, mGame.GetClickRule());
 		if((mFlags & DISPLAY_PERIOD_COUNT) && mCountedBoard == solution)
 		{
 			DisableFlags(IS_PERIO4_COUNTING); //Next tick we'll show the messagebox
-        }
+		}
 		else
 		{
 			mPeriodCount++;
@@ -528,40 +585,31 @@ void LightsOutApp::Update()
 				{
 					DisableFlags(IS_PERIO4_COUNTING); //Next tick we'll show the messagebox
 				}
-				else
-				{
-					mPeriodCount++;
-					solution = mSolver.GetSolution(solution, mGame.GetClickRule());
-					if((mFlags & DISPLAY_PERIOD_COUNT) && mCountedBoard == solution)
-					{
-						DisableFlags(IS_PERIO4_COUNTING); //Next tick we'll show the messagebox
-					}
-				}
 			}
 		}
-
-		mGame.Reset(solution, RESET_FLAG_LEAVE_STABILITY);
-		mRenderer->SetBoardToDraw(solution);
 	}
 
-	if(mFlags & IS_EIGVEC_COUNTING)
+	mGame.Reset(solution, RESET_FLAG_LEAVE_STABILITY);
+	mRenderer->SetBoardToDraw(solution);
+}
+
+void LightsOutApp::EigvecCountTick()
+{
+	LightsOutBoard currBoard = mGame.GetBoard();
+	mGame.GetClickRule()->Click(&currBoard, mEigenvecTurn.boardX, mEigenvecTurn.boardY);
+
+	LightsOutBoard solution = mSolver.GetSolution(currBoard, mGame.GetClickRule());
+	if(currBoard == solution)
 	{
-		LightsOutBoard currBoard = mGame.GetBoard();
-		mGame.GetClickRule()->Click(&currBoard, mEigenvecTurn.boardX, mEigenvecTurn.boardY);
+		mFlags &= ~IS_EIGVEC_COUNTING;
+	}
 
-		LightsOutBoard solution = mSolver.GetSolution(currBoard, mGame.GetClickRule());
-		if(currBoard == solution)
-		{
-			mFlags &= ~IS_EIGVEC_COUNTING;
-		}
+	mGame.Reset(solution, RESET_FLAG_LEAVE_STABILITY);
+	mRenderer->SetBoardToDraw(mGame.GetBoard());
 
-		mGame.Reset(solution, RESET_FLAG_LEAVE_STABILITY);
-		mRenderer->SetBoardToDraw(mGame.GetBoard());
-
-		if(mFlags & SHOW_STABILITY)
-		{
-			mRenderer->SetStabilityToDraw(mGame.GetStability());
-		}
+	if(mFlags & SHOW_STABILITY)
+	{
+		mRenderer->SetStabilityToDraw(mGame.GetStability());
 	}
 }
 
@@ -1385,7 +1433,7 @@ void LightsOutApp::OnKeyReleased(WPARAM key)
 		break;
 	}
 	case 'V':
-	{	
+	{
 		const uint32_t countFlags = IS_PERIOD_COUNTING | IS_PERIO4_COUNTING | IS_PERIOD_BACK_COUNTING;
 		ChangeCountingMode(!(mFlags & countFlags) ? CountingMode::COUNT_SOLUTION_PERIOD : CountingMode::COUNT_NONE, false);
 		break;
