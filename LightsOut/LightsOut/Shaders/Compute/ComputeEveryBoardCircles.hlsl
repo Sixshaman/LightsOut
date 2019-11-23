@@ -76,7 +76,7 @@ void main(uint3 DTid: SV_DispatchThreadID)
 			uint topPartSolvedValue    = (cellNumber.y > 0             ) * CellValueSolution(cellNumber + int2( 0, -1));
 			uint bottomPartSolvedValue = (cellNumber.y < gBoardSize - 1) * CellValueSolution(cellNumber + int2( 0,  1));
 
-			bool circleRuleSolved = insideCircle || ((leftPartSolvedValue == cellValue && cellCoord.x <= 0) || (topPartSolvedValue == cellValue && cellCoord.y <= 0) || (rightPartSolvedValue == cellValue && cellCoord.x >= 0) || (bottomPartSolvedValue == cellValue && cellCoord.y >= 0));
+			bool circleRuleSolved = insideCircle || ((leftPartSolvedValue == solutionValue && cellCoord.x <= 0) || (topPartSolvedValue == solutionValue && cellCoord.y <= 0) || (rightPartSolvedValue == solutionValue && cellCoord.x >= 0) || (bottomPartSolvedValue == solutionValue && cellCoord.y >= 0));
 
 			solutionPower = solutionPower * circleRuleSolved;
 			result        = lerp(result, gColorSolved, solutionPower);
@@ -93,7 +93,7 @@ void main(uint3 DTid: SV_DispatchThreadID)
 			uint topPartStableValue    = (cellNumber.y > 0             ) * CellValueStability(cellNumber + int2( 0, -1));
 			uint bottomPartStableValue = (cellNumber.y < gBoardSize - 1) * CellValueStability(cellNumber + int2( 0,  1));
 
-			bool circleRuleStable = insideCircle || ((leftPartStableValue == cellValue && cellCoord.x <= 0) || (topPartStableValue == cellValue && cellCoord.y <= 0) || (rightPartStableValue == cellValue && cellCoord.x >= 0) || (bottomPartStableValue == cellValue && cellCoord.y >= 0));
+			bool circleRuleStable = insideCircle || ((leftPartStableValue == stableValue && cellCoord.x <= 0) || (topPartStableValue == stableValue && cellCoord.y <= 0) || (rightPartStableValue == stableValue && cellCoord.x >= 0) || (bottomPartStableValue == stableValue && cellCoord.y >= 0));
 
 			stablePower = stablePower * circleRuleStable;
 			result      = lerp(result, colorStable, stablePower);

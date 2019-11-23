@@ -185,7 +185,7 @@ bool LightsOutApp::InitMenu()
 
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_SQUARES,   L"Squares");
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_CIRCLES,   L"Circles");
-	//AppendMenu(MenuView, MF_STRING, MENU_VIEW_DIAMONDS,  L"Diamonds");
+	AppendMenu(MenuView, MF_STRING, MENU_VIEW_DIAMONDS,  L"Diamonds");
 	//AppendMenu(MenuView, MF_STRING, MENU_VIEW_BEAMS,     L"Beams");
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_RAINDROPS, L"Raindrops");
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_CHAINS,    L"Chains");
@@ -239,6 +239,26 @@ bool LightsOutApp::InitHotkeys()
 	accels.back().cmd   = HOTKEY_ID_PERIOD_BACK_COUNT;
 	accels.back().fVirt = FCONTROL | FVIRTKEY;
 	accels.back().key   = 'Z';
+
+	accels.push_back(ACCEL());
+	accels.back().cmd   = HOTKEY_ID_PERIO4_COUNT;
+	accels.back().fVirt = FCONTROL | FVIRTKEY;
+	accels.back().key   = 'X';
+
+	accels.push_back(ACCEL());
+	accels.back().cmd   = HOTKEY_ID_INCREASE_DOMAIN_SIZE;
+	accels.back().fVirt = FCONTROL | FVIRTKEY;
+	accels.back().key   = VK_OEM_PLUS;
+
+	accels.push_back(ACCEL());
+	accels.back().cmd   = HOTKEY_ID_DECREASE_DOMAIN_SIZE;
+	accels.back().fVirt = FCONTROL | FVIRTKEY;
+	accels.back().key   = VK_OEM_MINUS;
+
+	accels.push_back(ACCEL());
+	accels.back().cmd   = HOTKEY_ID_ROTATE_NONZERO;
+	accels.back().fVirt = FCONTROL | FVIRTKEY;
+	accels.back().key   = 'I';
 
 	accels.push_back(ACCEL());
 	accels.back().cmd   = HOTKEY_ID_STABLE_LIT;
@@ -658,7 +678,7 @@ void LightsOutApp::ChangeGameSize(int32_t newSize)
 		ResetGameBoard(ResetMode::RESET_SOLVABLE_RANDOM, newSize);
 
 		wchar_t title[50];
-		swprintf_s(title, L"Lights out %dx%d", newSize, newSize, mGame.GetDomainSize());
+		swprintf_s(title, L"Lights out %dx%d DOMAIN %d", newSize, newSize, mGame.GetDomainSize());
 		SetWindowText(mMainWnd, title);
 
 		mWindowTitle = title;
@@ -672,7 +692,7 @@ void LightsOutApp::ChangeGameSize(int32_t newSize)
 		mRenderer->SetBoardToDraw(mGame.GetBoard());
 
 		wchar_t title[50];
-		swprintf_s(title, L"Lights out constructing %dx%d", newSize, newSize, mGame.GetDomainSize());
+		swprintf_s(title, L"Lights out constructing %dx%d DOMAIN %d", newSize, newSize, mGame.GetDomainSize());
 		SetWindowText(mMainWnd, title);
 
 		mWindowTitle = title;
@@ -721,7 +741,7 @@ void LightsOutApp::ChangeDomainSize(int32_t newDomainSize)
 	mGame.SetClickRuleRegular();
 
 	wchar_t title[50];
-	swprintf_s(title, L"Lights out %dx%d", mGame.GetSize(), mGame.GetSize(), newDomainSize);
+	swprintf_s(title, L"Lights out %dx%d DOMAIN %d", mGame.GetSize(), mGame.GetSize(), newDomainSize);
 	SetWindowText(mMainWnd, title);
 
 	mWindowTitle = title;
@@ -1365,15 +1385,15 @@ void LightsOutApp::OnKeyReleased(WPARAM key)
 		break;
 	}
 	case 'V':
-	{
+	{	
 		const uint32_t countFlags = IS_PERIOD_COUNTING | IS_PERIO4_COUNTING | IS_PERIOD_BACK_COUNTING;
 		ChangeCountingMode(!(mFlags & countFlags) ? CountingMode::COUNT_SOLUTION_PERIOD : CountingMode::COUNT_NONE, false);
 		break;
 	}
 	case 'X':
 	{
-		//const uint32_t countFlags = IS_PERIOD_COUNTING | IS_PERIO4_COUNTING | IS_PERIOD_BACK_COUNTING;
-		//ChangeCountingMode(!(mFlags & countFlags) ? CountingMode::COUNT_SOLUTION_PERIOD_4X : CountingMode::COUNT_NONE, false);
+		const uint32_t countFlags = IS_PERIOD_COUNTING | IS_PERIO4_COUNTING | IS_PERIOD_BACK_COUNTING;
+		ChangeCountingMode(!(mFlags & countFlags) ? CountingMode::COUNT_SOLUTION_PERIOD_4X : CountingMode::COUNT_NONE, false);
 		break;
 	}
 	case 'Z':
@@ -1427,8 +1447,8 @@ void LightsOutApp::OnHotkeyPresed(WPARAM hotkey)
 	}
 	case HOTKEY_ID_PERIO4_COUNT:
 	{
-		//const uint32_t countFlags = IS_PERIOD_COUNTING | IS_PERIO4_COUNTING | IS_PERIOD_BACK_COUNTING;
-		//ChangeCountingMode(!(mFlags & countFlags) ? CountingMode::COUNT_SOLUTION_PERIOD_4X : CountingMode::COUNT_NONE, true);
+		const uint32_t countFlags = IS_PERIOD_COUNTING | IS_PERIO4_COUNTING | IS_PERIOD_BACK_COUNTING;
+		ChangeCountingMode(!(mFlags & countFlags) ? CountingMode::COUNT_SOLUTION_PERIOD_4X : CountingMode::COUNT_NONE, true);
 		break;
 	}
 	case HOTKEY_ID_PERIOD_BACK_COUNT:
@@ -1439,17 +1459,17 @@ void LightsOutApp::OnHotkeyPresed(WPARAM hotkey)
 	}
 	case HOTKEY_ID_DECREASE_DOMAIN_SIZE:
 	{
-		//ChangeDomainSize((int32_t)mGame.GetDomainSize() - 1);
+		ChangeDomainSize((int32_t)mGame.GetDomainSize() - 1);
 		break;
 	}
 	case HOTKEY_ID_INCREASE_DOMAIN_SIZE:
 	{
-		//ChangeDomainSize((int32_t)mGame.GetDomainSize() + 1);
+		ChangeDomainSize((int32_t)mGame.GetDomainSize() + 1);
 		break;
 	}
 	case HOTKEY_ID_ROTATE_NONZERO:
 	{
-		//ResetGameBoard(ResetMode::RESET_DOMAIN_ROTATE_NONZERO);
+		ResetGameBoard(ResetMode::RESET_DOMAIN_ROTATE_NONZERO);
 		break;
 	}
 	case HOTKEY_ID_STABLE_LIT:

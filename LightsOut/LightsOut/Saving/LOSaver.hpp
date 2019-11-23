@@ -13,6 +13,7 @@ class LightsOutSaver
 {
 public:
 	static void SaveBMP(const std::wstring& filename, uint32_t* data, uint32_t width, uint32_t height, uint32_t rowPitch);
+	static void SavePNG(const std::wstring& filename, uint32_t* data, uint32_t width, uint32_t height, uint32_t rowPitch);
 };
 
 #endif LOSAVER_HPP
