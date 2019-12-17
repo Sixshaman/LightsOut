@@ -53,6 +53,7 @@ public:
 	void ResetDomainSize(uint16_t newDomainSize);
 	void SetSolutionVisible(bool visible);
 	void SetStabilityVisible(bool visible);
+	void SetToroidRender(bool toroid);
 
 	void DrawBoard(uint16_t cellSize, uint16_t gameSize);
 	void DrawBgBoardToMemory(uint16_t cellSize, uint16_t gameSize, std::vector<uint32_t>& outData, uint32_t& outRowPitch);

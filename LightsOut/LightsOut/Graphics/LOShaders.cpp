@@ -28,8 +28,8 @@ ComputeBoardShaders::ComputeBoardShaders(ID3D11Device *device)
 	ThrowIfFailed(D3DReadFileToBlob((ShaderPath + L"ComputeBoardDiamonds.cso").c_str(), shaderBlob.GetAddressOf()));
 	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mComputeBoardDiamondsShader.GetAddressOf()));
 
-	//ThrowIfFailed(D3DReadFileToBlob((ShaderPath + L"ComputeBoardBeams.cso").c_str(), shaderBlob.GetAddressOf()));
-	//ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mComputeBoardBeamsShader.GetAddressOf()));
+	ThrowIfFailed(D3DReadFileToBlob((ShaderPath + L"ComputeBoardBeams.cso").c_str(), shaderBlob.GetAddressOf()));
+	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mComputeBoardBeamsShader.GetAddressOf()));
 
 	ThrowIfFailed(D3DReadFileToBlob((ShaderPath + L"ComputeBoardRaindrops.cso").c_str(), shaderBlob.GetAddressOf()));
 	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mComputeBoardRaindopsShader.GetAddressOf()));
@@ -46,8 +46,8 @@ ComputeBoardShaders::ComputeBoardShaders(ID3D11Device *device)
 	ThrowIfFailed(D3DReadFileToBlob((ShaderPath + L"ComputeEveryBoardDiamonds.cso").c_str(), shaderBlob.GetAddressOf()));
 	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mComputeEveryBoardDiamondsShader.GetAddressOf()));
 
-	//ThrowIfFailed(D3DReadFileToBlob((ShaderPath + L"ComputeEveryBoardBeams.cso").c_str(), shaderBlob.GetAddressOf()));
-	//ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mComputeEveryBoardBeamsShader.GetAddressOf()));
+	ThrowIfFailed(D3DReadFileToBlob((ShaderPath + L"ComputeEveryBoardBeams.cso").c_str(), shaderBlob.GetAddressOf()));
+	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mComputeEveryBoardBeamsShader.GetAddressOf()));
 
 	ThrowIfFailed(D3DReadFileToBlob((ShaderPath + L"ComputeEveryBoardRaindrops.cso").c_str(), shaderBlob.GetAddressOf()));
 	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mComputeEveryBoardRaindropsShader.GetAddressOf()));

@@ -186,7 +186,7 @@ bool LightsOutApp::InitMenu()
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_SQUARES,   L"Squares");
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_CIRCLES,   L"Circles");
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_DIAMONDS,  L"Diamonds");
-	//AppendMenu(MenuView, MF_STRING, MENU_VIEW_BEAMS,     L"Beams");
+	AppendMenu(MenuView, MF_STRING, MENU_VIEW_BEAMS,     L"Beams");
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_RAINDROPS, L"Raindrops");
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_CHAINS,    L"Chains");
 
@@ -1239,10 +1239,12 @@ void LightsOutApp::BakeClickRule()
 	if(mWorkingMode == WorkingMode::CONSTRUCT_CLICKRULE)
 	{
 		mGame.SetClickRuleBaked();
+		mRenderer->SetToroidRender(false);
 	}
 	else if (mWorkingMode == WorkingMode::CONSTRUCT_CLICKRULE_TOROID)
 	{
 		mGame.SetClickRuleBakedToroid();
+		mRenderer->SetToroidRender(true);
 	}
 
 	ChangeWorkingMode(WorkingMode::LIT_BOARD);
@@ -1464,6 +1466,7 @@ void LightsOutApp::OnHotkeyPresed(WPARAM hotkey)
 			ShowSolution(false);
 			ShowStability(false);
 			mGame.SetClickRuleRegular();
+			mRenderer->SetToroidRender(false);
 		}
 		break;
 	}
@@ -1474,6 +1477,7 @@ void LightsOutApp::OnHotkeyPresed(WPARAM hotkey)
 			ShowSolution(false);
 			ShowStability(false);
 			mGame.SetClickRuleToroid();
+			mRenderer->SetToroidRender(true);
 		}
 		break;
 	}
