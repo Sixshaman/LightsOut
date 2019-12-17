@@ -1,5 +1,6 @@
 #define FLAG_SHOW_SOLUTION  0x01
 #define FLAG_SHOW_STABILITY 0x02
+#define FLAG_TOROID_RENDER  0x04
 
 cbuffer cbParams: register(b0)
 {
@@ -89,18 +90,88 @@ void main(uint3 DTid: SV_DispatchThreadID)
 		bool1 insideFreeCircle = insideCircle && !insideLinkV     && !insideLinkH;
 		bool4 insideFreeCorner = insideCorner && !insideLink.xxxx && !insideLink.yyyy;
 
-		uint leftPartValue         = (cellNumber.x > 0                                              ) * CellValue(cellNumber + int2(-1,  0));
-		uint rightPartValue        = (cellNumber.x < iBoardSize - 1                                 ) * CellValue(cellNumber + int2( 1,  0));
-		uint topPartValue          = (                                 cellNumber.y > 0             ) * CellValue(cellNumber + int2( 0, -1));
-		uint bottomPartValue       = (                                 cellNumber.y < iBoardSize - 1) * CellValue(cellNumber + int2( 0,  1));
-		uint leftTopPartValue      = (cellNumber.x > 0              && cellNumber.y > 0             ) * CellValue(cellNumber + int2(-1, -1));
-		uint rightTopPartValue     = (cellNumber.x < iBoardSize - 1 && cellNumber.y > 0             ) * CellValue(cellNumber + int2( 1, -1));
-		uint leftBottomPartValue   = (cellNumber.y < iBoardSize - 1 && cellNumber.x > 0             ) * CellValue(cellNumber + int2(-1,  1));
-		uint rightBottomPartValue  = (cellNumber.x < iBoardSize - 1 && cellNumber.y < iBoardSize - 1) * CellValue(cellNumber + int2( 1,  1));
-		uint left2PartValue        = (cellNumber.x > 1                                              ) * CellValue(cellNumber + int2(-2,  0));
-		uint right2PartValue       = (cellNumber.x < iBoardSize - 2                                 ) * CellValue(cellNumber + int2( 2,  0));
-		uint top2PartValue         = (                                 cellNumber.y > 1             ) * CellValue(cellNumber + int2( 0, -2));
-		uint bottom2PartValue      = (                                 cellNumber.y < iBoardSize - 2) * CellValue(cellNumber + int2( 0,  2));
+		int2 leftCell         = cellNumber + int2(-1,  0);
+		int2 rightCell        = cellNumber + int2( 1,  0);
+		int2 topCell          = cellNumber + int2( 0, -1);
+		int2 bottomCell       = cellNumber + int2( 0,  1);
+		int2 leftTopCell      = cellNumber + int2(-1, -1);
+		int2 rightTopCell     = cellNumber + int2( 1, -1);
+		int2 leftBottomCell   = cellNumber + int2(-1,  1);
+		int2 rightBottomCell  = cellNumber + int2( 1,  1);
+		int2 left2Cell        = cellNumber + int2(-2,  0);
+		int2 right2Cell       = cellNumber + int2( 2,  0);
+		int2 top2Cell         = cellNumber + int2( 0, -2);
+		int2 bottom2Cell      = cellNumber + int2( 0,  2);
+
+		bool nonLeftEdge        = cellNumber.x > 0;
+		bool nonRightEdge       = cellNumber.x < gBoardSize - 1;
+		bool nonTopEdge         =                                  cellNumber.y > 0;
+		bool nonBottomEdge      =                                  cellNumber.y < gBoardSize - 1;
+		bool nonLeftTopEdge     = cellNumber.x > 0              && cellNumber.y > 0;
+		bool nonRightTopEdge    = cellNumber.x < gBoardSize - 1 && cellNumber.y > 0;
+		bool nonLeftBottomEdge  = cellNumber.x > 0              && cellNumber.y < gBoardSize - 1;
+		bool nonRightBottomEdge = cellNumber.x < gBoardSize - 1 && cellNumber.y < gBoardSize - 1;
+		bool nonLeft2Edge       = cellNumber.x > 1;
+		bool nonRight2Edge      = cellNumber.x < gBoardSize - 2;
+		bool nonTop2Edge        =                                  cellNumber.y > 1;
+		bool nonBottom2Edge     =                                  cellNumber.y < gBoardSize - 2;
+
+		if(gFlags & FLAG_TOROID_RENDER)
+		{
+			nonLeftEdge        = true;
+			nonRightEdge       = true;
+			nonTopEdge         = true;
+			nonBottomEdge      = true;
+			nonLeftTopEdge     = true;
+			nonRightTopEdge    = true;
+			nonLeftBottomEdge  = true;
+			nonRightBottomEdge = true;
+			nonLeft2Edge       = true;
+			nonRight2Edge      = true;
+			nonTop2Edge        = true;
+			nonBottom2Edge     = true;
+
+			const uint maxCheckDistance = 2; //Different for different render modes
+
+			uint2 leftCellU        = (uint2)(leftCell        + gBoardSize.xx * maxCheckDistance);
+			uint2 rightCellU       = (uint2)(rightCell       + gBoardSize.xx * maxCheckDistance);
+			uint2 topCellU         = (uint2)(topCell         + gBoardSize.xx * maxCheckDistance);
+			uint2 bottomCellU      = (uint2)(bottomCell      + gBoardSize.xx * maxCheckDistance);
+			uint2 leftTopCellU     = (uint2)(leftTopCell     + gBoardSize.xx * maxCheckDistance);
+			uint2 rightTopCellU    = (uint2)(rightTopCell    + gBoardSize.xx * maxCheckDistance);
+			uint2 leftBottomCellU  = (uint2)(leftBottomCell  + gBoardSize.xx * maxCheckDistance);
+			uint2 rightBottomCellU = (uint2)(rightBottomCell + gBoardSize.xx * maxCheckDistance);
+			uint2 left2CellU       = (uint2)(left2Cell       + gBoardSize.xx * maxCheckDistance);
+			uint2 right2CellU      = (uint2)(right2Cell      + gBoardSize.xx * maxCheckDistance);
+			uint2 top2CellU        = (uint2)(top2Cell        + gBoardSize.xx * maxCheckDistance);
+			uint2 bottom2CellU     = (uint2)(bottom2Cell     + gBoardSize.xx * maxCheckDistance);
+
+			leftCell        = (int2)(leftCellU        % gBoardSize.xx);
+			rightCell       = (int2)(rightCellU       % gBoardSize.xx);
+			topCell         = (int2)(topCellU         % gBoardSize.xx);
+			bottomCell      = (int2)(bottomCellU      % gBoardSize.xx);
+			leftTopCell     = (int2)(leftTopCellU     % gBoardSize.xx);
+			rightTopCell    = (int2)(rightTopCellU    % gBoardSize.xx);
+			leftBottomCell  = (int2)(leftBottomCellU  % gBoardSize.xx);
+			rightBottomCell = (int2)(rightBottomCellU % gBoardSize.xx);
+			left2Cell       = (int2)(left2CellU       % gBoardSize.xx);
+			right2Cell      = (int2)(right2CellU      % gBoardSize.xx);
+			top2Cell        = (int2)(top2CellU        % gBoardSize.xx);
+			bottom2Cell     = (int2)(bottom2CellU     % gBoardSize.xx);
+		}
+
+		uint leftPartValue         = nonLeftEdge        * CellValue(leftCell);
+		uint rightPartValue        = nonRightEdge       * CellValue(rightCell);
+		uint topPartValue          = nonTopEdge         * CellValue(topCell);
+		uint bottomPartValue       = nonBottomEdge      * CellValue(bottomCell);
+		uint leftTopPartValue      = nonLeftTopEdge     * CellValue(leftTopCell);
+		uint rightTopPartValue     = nonRightTopEdge    * CellValue(rightTopCell);
+		uint leftBottomPartValue   = nonLeftBottomEdge  * CellValue(leftBottomCell);
+		uint rightBottomPartValue  = nonRightBottomEdge * CellValue(rightBottomCell);
+		uint left2PartValue        = nonLeft2Edge       * CellValue(left2Cell);
+		uint right2PartValue       = nonRight2Edge      * CellValue(right2Cell);
+		uint top2PartValue         = nonTop2Edge        * CellValue(top2Cell);
+		uint bottom2PartValue      = nonBottom2Edge     * CellValue(bottom2Cell);
 
 		uint4 edgeValue   = uint4(leftPartValue,    topPartValue,      rightPartValue,       bottomPartValue);
 		uint4 cornerValue = uint4(leftTopPartValue, rightTopPartValue, rightBottomPartValue, leftBottomPartValue);
@@ -136,18 +207,18 @@ void main(uint3 DTid: SV_DispatchThreadID)
 		{
 			uint solutionValue = CellValueSolution(cellNumber);
 
-			uint leftPartSolved        = (cellNumber.x > 0             )                                   * CellValueSolution(cellNumber + int2(-1,  0));
-			uint rightPartSolved       = (cellNumber.x < gBoardSize - 1)                                   * CellValueSolution(cellNumber + int2( 1,  0));
-			uint topPartSolved         = (cellNumber.y > 0             )                                   * CellValueSolution(cellNumber + int2( 0, -1));
-			uint bottomPartSolved      = (cellNumber.y < gBoardSize - 1)                                   * CellValueSolution(cellNumber + int2( 0,  1));
-			uint leftTopPartSolved     = (cellNumber.x > 0             ) * (cellNumber.y > 0             ) * CellValueSolution(cellNumber + int2(-1, -1));
-			uint rightTopPartSolved    = (cellNumber.x < gBoardSize - 1) * (cellNumber.y > 0             ) * CellValueSolution(cellNumber + int2( 1, -1));
-			uint leftBottomPartSolved  = (cellNumber.y < gBoardSize - 1) * (cellNumber.x > 0             ) * CellValueSolution(cellNumber + int2(-1,  1));
-			uint rightBottomPartSolved = (cellNumber.x < gBoardSize - 1) * (cellNumber.y < gBoardSize - 1) * CellValueSolution(cellNumber + int2( 1,  1));
-			uint left2PartSolved       = (cellNumber.x > 1                                               ) * CellValueSolution(cellNumber + int2(-2,  0));
-			uint right2PartSolved      = (cellNumber.x < iBoardSize - 2                                  ) * CellValueSolution(cellNumber + int2( 2,  0));
-			uint top2PartSolved        = (                                 cellNumber.y > 1              ) * CellValueSolution(cellNumber + int2( 0, -2));
-			uint bottom2PartSolved     = (                                 cellNumber.y < iBoardSize - 2 ) * CellValueSolution(cellNumber + int2( 0,  2));
+			uint leftPartSolved        = nonLeftEdge        * CellValueSolution(leftCell);
+			uint rightPartSolved       = nonRightEdge       * CellValueSolution(rightCell);
+			uint topPartSolved         = nonTopEdge         * CellValueSolution(topCell);
+			uint bottomPartSolved      = nonBottomEdge      * CellValueSolution(bottomCell);
+			uint leftTopPartSolved     = nonLeftTopEdge     * CellValueSolution(leftTopCell);
+			uint rightTopPartSolved    = nonRightTopEdge    * CellValueSolution(rightTopCell);
+			uint leftBottomPartSolved  = nonLeftBottomEdge  * CellValueSolution(leftBottomCell);
+			uint rightBottomPartSolved = nonRightBottomEdge * CellValueSolution(rightBottomCell);
+			uint left2PartSolved       = nonLeft2Edge       * CellValueSolution(left2Cell);
+			uint right2PartSolved      = nonRight2Edge      * CellValueSolution(right2Cell);
+			uint top2PartSolved        = nonTop2Edge        * CellValueSolution(top2Cell);
+			uint bottom2PartSolved     = nonBottom2Edge     * CellValueSolution(bottom2Cell);
 
 			uint4 edgeSolved   = uint4(leftPartSolved,    topPartSolved,      rightPartSolved,       bottomPartSolved);
 			uint4 cornerSolved = uint4(leftTopPartSolved, rightTopPartSolved, rightBottomPartSolved, leftBottomPartSolved);
@@ -183,18 +254,18 @@ void main(uint3 DTid: SV_DispatchThreadID)
 			uint   stabilityValue = CellValueStability(cellNumber);
 			float4 colorStable    = float4(1.0f, 1.0f, 1.0f, 1.0f) - gColorEnabled;
 
-			uint leftPartStable        = (cellNumber.x > 0             )                                   * CellValueStability(cellNumber + int2(-1,  0));
-			uint rightPartStable       = (cellNumber.x < gBoardSize - 1)                                   * CellValueStability(cellNumber + int2( 1,  0));
-			uint topPartStable         = (cellNumber.y > 0             )                                   * CellValueStability(cellNumber + int2( 0, -1));
-			uint bottomPartStable      = (cellNumber.y < gBoardSize - 1)                                   * CellValueStability(cellNumber + int2( 0,  1));
-			uint leftTopPartStable     = (cellNumber.x > 0             ) * (cellNumber.y > 0             ) * CellValueStability(cellNumber + int2(-1, -1));
-			uint rightTopPartStable    = (cellNumber.x < gBoardSize - 1) * (cellNumber.y > 0             ) * CellValueStability(cellNumber + int2( 1, -1));
-			uint leftBottomPartStable  = (cellNumber.y < gBoardSize - 1) * (cellNumber.x > 0             ) * CellValueStability(cellNumber + int2(-1,  1));
-			uint rightBottomPartStable = (cellNumber.x < gBoardSize - 1) * (cellNumber.y < gBoardSize - 1) * CellValueStability(cellNumber + int2( 1,  1));
-			uint left2PartStable       = (cellNumber.x > 1                                               ) * CellValueStability(cellNumber + int2(-2,  0));
-			uint right2PartStable      = (cellNumber.x < iBoardSize - 2                                  ) * CellValueStability(cellNumber + int2( 2,  0));
-			uint top2PartStable        = (                                 cellNumber.y > 1              ) * CellValueStability(cellNumber + int2( 0, -2));
-			uint bottom2PartStable     = (                                 cellNumber.y < iBoardSize - 2 ) * CellValueStability(cellNumber + int2( 0,  2));
+			uint leftPartStable        = nonLeftEdge        * CellValueStability(leftCell);
+			uint rightPartStable       = nonRightEdge       * CellValueStability(rightCell);
+			uint topPartStable         = nonTopEdge         * CellValueStability(topCell);
+			uint bottomPartStable      = nonBottomEdge      * CellValueStability(bottomCell);
+			uint leftTopPartStable     = nonLeftTopEdge     * CellValueStability(leftTopCell);
+			uint rightTopPartStable    = nonRightTopEdge    * CellValueStability(rightTopCell);
+			uint leftBottomPartStable  = nonLeftBottomEdge  * CellValueStability(leftBottomCell);
+			uint rightBottomPartStable = nonRightBottomEdge * CellValueStability(rightBottomCell);
+			uint left2PartStable       = nonLeft2Edge       * CellValueStability(left2Cell);
+			uint right2PartStable      = nonRight2Edge      * CellValueStability(right2Cell);
+			uint top2PartStable        = nonTop2Edge        * CellValueStability(top2Cell);
+			uint bottom2PartStable     = nonBottom2Edge     * CellValueStability(bottom2Cell);
 
 			uint4 edgeStable   = uint4(leftPartStable,    topPartStable,      rightPartStable,       bottomPartStable);
 			uint4 cornerStable = uint4(leftTopPartStable, rightTopPartStable, rightBottomPartStable, leftBottomPartStable);

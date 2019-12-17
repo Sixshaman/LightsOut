@@ -1,5 +1,6 @@
 #define FLAG_SHOW_SOLUTION  0x01
 #define FLAG_SHOW_STABILITY 0x02
+#define FLAG_TOROID_RENDER  0x04
 
 cbuffer cbParams: register(b0)
 {
@@ -53,12 +54,42 @@ void main(uint3 DTid: SV_DispatchThreadID)
 		float2 cellCoord    = DTid.xy - cellNumber * (float2)gCellSize.xx - (float2)gCellSize.xx / 2;
 		float  circleRadius = (gCellSize - 1) / 2;
 
+		int2 leftCell   = cellNumber + int2(-1,  0);
+		int2 rightCell  = cellNumber + int2( 1,  0);
+		int2 topCell    = cellNumber + int2( 0, -1);
+		int2 bottomCell = cellNumber + int2( 0,  1);
+
 		bool insideCircle = (dot(cellCoord, cellCoord) < circleRadius * circleRadius);
 
-		uint leftPartValue   = (cellNumber.x > 0             ) * CellValue(cellNumber + int2(-1,  0));
-		uint rightPartValue  = (cellNumber.x < gBoardSize - 1) * CellValue(cellNumber + int2( 1,  0));
-		uint topPartValue    = (cellNumber.y > 0             ) * CellValue(cellNumber + int2( 0, -1));
-		uint bottomPartValue = (cellNumber.y < gBoardSize - 1) * CellValue(cellNumber + int2( 0,  1));
+		bool nonLeftEdge   = cellNumber.x > 0;
+		bool nonRightEdge  = cellNumber.x < gBoardSize - 1;
+		bool nonTopEdge    = cellNumber.y > 0;
+		bool nonBottomEdge = cellNumber.y < gBoardSize - 1;
+
+		if(gFlags & FLAG_TOROID_RENDER)
+		{
+			nonLeftEdge   = true;
+			nonRightEdge  = true;
+			nonTopEdge    = true;
+			nonBottomEdge = true;
+
+			const uint maxCheckDistance = 1; //Different for different render modes
+
+			uint2 leftCellU   = (uint2)(leftCell   + gBoardSize.xx * maxCheckDistance);
+			uint2 rightCellU  = (uint2)(rightCell  + gBoardSize.xx * maxCheckDistance);
+			uint2 topCellU    = (uint2)(topCell    + gBoardSize.xx * maxCheckDistance);
+			uint2 bottomCellU = (uint2)(bottomCell + gBoardSize.xx * maxCheckDistance);
+
+			leftCell   = (int2)(leftCellU   % gBoardSize.xx);
+			rightCell  = (int2)(rightCellU  % gBoardSize.xx);
+			topCell    = (int2)(topCellU    % gBoardSize.xx);
+			bottomCell = (int2)(bottomCellU % gBoardSize.xx);
+		}
+
+		uint leftPartValue   = nonLeftEdge   * CellValue(leftCell);
+		uint rightPartValue  = nonRightEdge  * CellValue(rightCell);
+		uint topPartValue    = nonTopEdge    * CellValue(topCell);
+		uint bottomPartValue = nonBottomEdge * CellValue(bottomCell);
 
 		bool circleRuleColored = insideCircle || ((leftPartValue == cellValue && cellCoord.x <= 0) || (topPartValue == cellValue && cellCoord.y <= 0) || (rightPartValue == cellValue && cellCoord.x >= 0) || (bottomPartValue == cellValue && cellCoord.y >= 0));
 		
@@ -71,10 +102,10 @@ void main(uint3 DTid: SV_DispatchThreadID)
 			uint  solutionValue = CellValueSolution(cellNumber);
 			float solutionPower = (float)solutionValue / (gDomainSize - 1.0f);
 
-			uint leftPartSolvedValue   = (cellNumber.x > 0             ) * CellValueSolution(cellNumber + int2(-1,  0));
-			uint rightPartSolvedValue  = (cellNumber.x < gBoardSize - 1) * CellValueSolution(cellNumber + int2( 1,  0));
-			uint topPartSolvedValue    = (cellNumber.y > 0             ) * CellValueSolution(cellNumber + int2( 0, -1));
-			uint bottomPartSolvedValue = (cellNumber.y < gBoardSize - 1) * CellValueSolution(cellNumber + int2( 0,  1));
+			uint leftPartSolvedValue   = nonLeftEdge   * CellValueSolution(leftCell);
+			uint rightPartSolvedValue  = nonRightEdge  * CellValueSolution(rightCell);
+			uint topPartSolvedValue    = nonTopEdge    * CellValueSolution(topCell);
+			uint bottomPartSolvedValue = nonBottomEdge * CellValueSolution(bottomCell);
 
 			bool circleRuleSolved = insideCircle || ((leftPartSolvedValue == solutionValue && cellCoord.x <= 0) || (topPartSolvedValue == solutionValue && cellCoord.y <= 0) || (rightPartSolvedValue == solutionValue && cellCoord.x >= 0) || (bottomPartSolvedValue == solutionValue && cellCoord.y >= 0));
 
@@ -88,10 +119,10 @@ void main(uint3 DTid: SV_DispatchThreadID)
 
 			float4 colorStable = float4(1.0f, 1.0f, 1.0f, 1.0f) - gColorEnabled;
 
-			uint leftPartStableValue   = (cellNumber.x > 0             ) * CellValueStability(cellNumber + int2(-1,  0));
-			uint rightPartStableValue  = (cellNumber.x < gBoardSize - 1) * CellValueStability(cellNumber + int2( 1,  0));
-			uint topPartStableValue    = (cellNumber.y > 0             ) * CellValueStability(cellNumber + int2( 0, -1));
-			uint bottomPartStableValue = (cellNumber.y < gBoardSize - 1) * CellValueStability(cellNumber + int2( 0,  1));
+			uint leftPartStableValue   = nonLeftEdge   * CellValueStability(leftCell);
+			uint rightPartStableValue  = nonRightEdge  * CellValueStability(rightCell);
+			uint topPartStableValue    = nonTopEdge    * CellValueStability(topCell);
+			uint bottomPartStableValue = nonBottomEdge * CellValueStability(bottomCell);
 
 			bool circleRuleStable = insideCircle || ((leftPartStableValue == stableValue && cellCoord.x <= 0) || (topPartStableValue == stableValue && cellCoord.y <= 0) || (rightPartStableValue == stableValue && cellCoord.x >= 0) || (bottomPartStableValue == stableValue && cellCoord.y >= 0));
 

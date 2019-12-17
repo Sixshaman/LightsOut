@@ -89,6 +89,11 @@ void LightsOutRenderer::SetStabilityVisible(bool visible)
 	mComputeBoardVariables->SetStabilityVisible(visible);
 }
 
+void LightsOutRenderer::SetToroidRender(bool toroid)
+{
+	mComputeBoardVariables->SetToroidRender(toroid);
+}
+
 bool LightsOutRenderer::OnWndResize(uint16_t newWidth, uint16_t newHeight)
 {
 	mRenderTarget.Reset();

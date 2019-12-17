@@ -5,6 +5,7 @@
 
 #define FLAG_SHOW_SOLUTION  0x01
 #define FLAG_SHOW_STABILITY 0x02
+#define FLAG_TOROID_RENDER  0x04
 
 template<typename CBufType>
 inline void UpdateBuffer(ID3D11Buffer *destBuf, CBufType &srcBuf, ID3D11DeviceContext *dc)
@@ -119,6 +120,11 @@ void ComputeBoardVariables::SetSolutionVisible(bool solveVisible)
 void ComputeBoardVariables::SetStabilityVisible(bool stabilityVisible)
 {
 	mCSCBufferCopy.Flags = (int)stabilityVisible * (mCSCBufferCopy.Flags | FLAG_SHOW_STABILITY) + (int)(!stabilityVisible) * (mCSCBufferCopy.Flags & ~FLAG_SHOW_STABILITY);
+}
+
+void ComputeBoardVariables::SetToroidRender(bool toroidRender)
+{
+	mCSCBufferCopy.Flags = (int)toroidRender * (mCSCBufferCopy.Flags | FLAG_TOROID_RENDER) + (int)(!toroidRender) * (mCSCBufferCopy.Flags & ~FLAG_TOROID_RENDER);
 }
 
 void ComputeBoardVariables::SetColorNone(DirectX::XMVECTOR colorNone)

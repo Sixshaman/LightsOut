@@ -32,6 +32,7 @@ public:
 	void SetDomainSize(uint32_t domainSize);
 	void SetSolutionVisible(bool solveVisible);
 	void SetStabilityVisible(bool stabilityVisible);
+	void SetToroidRender(bool toroidRender);
 
 	void SetColorNone(DirectX::XMVECTOR colorNone);
 	void SetColorEnabled(DirectX::XMVECTOR colorEnabled);
