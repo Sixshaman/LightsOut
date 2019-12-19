@@ -91,7 +91,7 @@ void LightsOutRenderer::SetStabilityVisible(bool visible)
 
 void LightsOutRenderer::SetToroidRender(bool toroid)
 {
-	mComputeBoardVariables->SetToroidRender(toroid);
+	mComputeBoardVariables->SetToroidRender(false);
 }
 
 bool LightsOutRenderer::OnWndResize(uint16_t newWidth, uint16_t newHeight)

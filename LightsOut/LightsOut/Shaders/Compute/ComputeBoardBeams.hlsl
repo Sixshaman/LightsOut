@@ -1,5 +1,6 @@
 #define FLAG_SHOW_SOLUTION  0x01
 #define FLAG_SHOW_STABILITY 0x02
+#define FLAG_TOROID_RENDER  0x04
 
 cbuffer cbParams: register(b0)
 {
@@ -96,14 +97,64 @@ void main(uint3 DTid: SV_DispatchThreadID)
 		bool insideBottomRightCorner = !insideVerticalBeamBottom && !insideHorizontalBeamRight && cellCoord.x >= 0 && cellCoord.y >= 0;
 		bool insideBottomLeftCorner  = !insideVerticalBeamBottom && !insideHorizontalBeamLeft  && cellCoord.x <= 0 && cellCoord.y >= 0;
 
-		bool leftPartColored        = cellNumber.x > 0                                               && IsCellActivated(cellNumber + int2(-1,  0));
-		bool rightPartColored       = cellNumber.x < gBoardSize - 1                                  && IsCellActivated(cellNumber + int2( 1,  0));
-		bool topPartColored         =                                  cellNumber.y > 0              && IsCellActivated(cellNumber + int2( 0, -1));
-		bool bottomPartColored      =                                  cellNumber.y < gBoardSize - 1 && IsCellActivated(cellNumber + int2( 0,  1));
-		bool leftTopPartColored     = cellNumber.x > 0              && cellNumber.y > 0              && IsCellActivated(cellNumber + int2(-1, -1));
-		bool rightTopPartColored    = cellNumber.x < gBoardSize - 1 && cellNumber.y > 0              && IsCellActivated(cellNumber + int2( 1, -1));
-		bool leftBottomPartColored  = cellNumber.y < gBoardSize - 1 && cellNumber.x > 0              && IsCellActivated(cellNumber + int2(-1,  1));
-		bool rightBottomPartColored = cellNumber.x < gBoardSize - 1 && cellNumber.y < gBoardSize - 1 && IsCellActivated(cellNumber + int2( 1,  1));
+		int2 leftCell        = cellNumber + int2(-1,  0);
+		int2 rightCell       = cellNumber + int2( 1,  0);
+		int2 topCell         = cellNumber + int2( 0, -1);
+		int2 bottomCell      = cellNumber + int2( 0,  1);
+		int2 leftTopCell     = cellNumber + int2(-1, -1);
+		int2 rightTopCell    = cellNumber + int2( 1, -1);
+		int2 leftBottomCell  = cellNumber + int2(-1,  1);
+		int2 rightBottomCell = cellNumber + int2( 1,  1);
+
+		bool nonLeftEdge        = cellNumber.x > 0;
+		bool nonRightEdge       = cellNumber.x < gBoardSize - 1;
+		bool nonTopEdge         =                                  cellNumber.y > 0;
+		bool nonBottomEdge      =                                  cellNumber.y < gBoardSize - 1;
+		bool nonLeftTopEdge     = cellNumber.x > 0              && cellNumber.y > 0;
+		bool nonRightTopEdge    = cellNumber.x < gBoardSize - 1 && cellNumber.y > 0;
+		bool nonLeftBottomEdge  = cellNumber.x > 0              && cellNumber.y < gBoardSize - 1;
+		bool nonRightBottomEdge = cellNumber.x < gBoardSize - 1 && cellNumber.y < gBoardSize - 1;
+
+		if(gFlags & FLAG_TOROID_RENDER)
+		{
+			nonLeftEdge        = true;
+			nonRightEdge       = true;
+			nonTopEdge         = true;
+			nonBottomEdge      = true;
+			nonLeftTopEdge     = true;
+			nonRightTopEdge    = true;
+			nonLeftBottomEdge  = true;
+			nonRightBottomEdge = true;
+
+			const uint maxCheckDistance = 1; //Different for different render modes
+
+			uint2 leftCellU        = (uint2)(leftCell        + gBoardSize.xx * maxCheckDistance);
+			uint2 rightCellU       = (uint2)(rightCell       + gBoardSize.xx * maxCheckDistance);
+			uint2 topCellU         = (uint2)(topCell         + gBoardSize.xx * maxCheckDistance);
+			uint2 bottomCellU      = (uint2)(bottomCell      + gBoardSize.xx * maxCheckDistance);
+			uint2 leftTopCellU     = (uint2)(leftTopCell     + gBoardSize.xx * maxCheckDistance);
+			uint2 rightTopCellU    = (uint2)(rightTopCell    + gBoardSize.xx * maxCheckDistance);
+			uint2 leftBottomCellU  = (uint2)(leftBottomCell  + gBoardSize.xx * maxCheckDistance);
+			uint2 rightBottomCellU = (uint2)(rightBottomCell + gBoardSize.xx * maxCheckDistance);
+
+			leftCell        = (int2)(leftCellU        % gBoardSize.xx);
+			rightCell       = (int2)(rightCellU       % gBoardSize.xx);
+			topCell         = (int2)(topCellU         % gBoardSize.xx);
+			bottomCell      = (int2)(bottomCellU      % gBoardSize.xx);
+			leftTopCell     = (int2)(leftTopCellU     % gBoardSize.xx);
+			rightTopCell    = (int2)(rightTopCellU    % gBoardSize.xx);
+			leftBottomCell  = (int2)(leftBottomCellU  % gBoardSize.xx);
+			rightBottomCell = (int2)(rightBottomCellU % gBoardSize.xx);
+		}
+
+		bool leftPartColored        = nonLeftEdge        && IsCellActivated(leftCell);
+		bool rightPartColored       = nonRightEdge       && IsCellActivated(rightCell);
+		bool topPartColored         = nonTopEdge         && IsCellActivated(topCell);
+		bool bottomPartColored      = nonBottomEdge      && IsCellActivated(bottomCell);
+		bool leftTopPartColored     = nonLeftTopEdge     && IsCellActivated(leftTopCell);
+		bool rightTopPartColored    = nonRightTopEdge    && IsCellActivated(rightTopCell);
+		bool leftBottomPartColored  = nonLeftBottomEdge  && IsCellActivated(leftBottomCell);
+		bool rightBottomPartColored = nonRightBottomEdge && IsCellActivated(rightBottomCell);
 
 		bool surroundUncolored = !leftPartColored && !rightPartColored && !topPartColored && !bottomPartColored && !leftTopPartColored && !rightTopPartColored && !leftBottomPartColored && !rightBottomPartColored;
 
@@ -129,14 +180,14 @@ void main(uint3 DTid: SV_DispatchThreadID)
 		{
 			bool cellSolved = IsCellActivatedSolution(cellNumber);
 
-			bool leftPartSolved        = cellNumber.x > 0                                               && IsCellActivatedSolution(cellNumber + int2(-1,  0));
-			bool rightPartSolved       = cellNumber.x < gBoardSize - 1                                  && IsCellActivatedSolution(cellNumber + int2( 1,  0));
-			bool topPartSolved         =                                  cellNumber.y > 0              && IsCellActivatedSolution(cellNumber + int2( 0, -1));
-			bool bottomPartSolved      =                                  cellNumber.y < gBoardSize - 1 && IsCellActivatedSolution(cellNumber + int2( 0,  1));
-			bool leftTopPartSolved     = cellNumber.x > 0              && cellNumber.y > 0              && IsCellActivatedSolution(cellNumber + int2(-1, -1));
-			bool rightTopPartSolved    = cellNumber.x < gBoardSize - 1 && cellNumber.y > 0              && IsCellActivatedSolution(cellNumber + int2( 1, -1));
-			bool leftBottomPartSolved  = cellNumber.y < gBoardSize - 1 && cellNumber.x > 0              && IsCellActivatedSolution(cellNumber + int2(-1,  1));
-			bool rightBottomPartSolved = cellNumber.x < gBoardSize - 1 && cellNumber.y < gBoardSize - 1 && IsCellActivatedSolution(cellNumber + int2( 1,  1));
+			bool leftPartSolved        = nonLeftEdge        && IsCellActivatedSolution(leftCell);
+			bool rightPartSolved       = nonRightEdge       && IsCellActivatedSolution(rightCell);
+			bool topPartSolved         = nonTopEdge         && IsCellActivatedSolution(topCell);
+			bool bottomPartSolved      = nonBottomEdge      && IsCellActivatedSolution(bottomCell);
+			bool leftTopPartSolved     = nonLeftTopEdge     && IsCellActivatedSolution(leftTopCell);
+			bool rightTopPartSolved    = nonRightTopEdge    && IsCellActivatedSolution(rightTopCell);
+			bool leftBottomPartSolved  = nonLeftBottomEdge  && IsCellActivatedSolution(leftBottomCell);
+			bool rightBottomPartSolved = nonRightBottomEdge && IsCellActivatedSolution(rightBottomCell);
 
 			bool surroundUnsolved = !leftPartSolved && !rightPartSolved && !topPartSolved && !bottomPartSolved && !leftTopPartSolved && !rightTopPartSolved && !leftBottomPartSolved && !rightBottomPartSolved;
 
@@ -157,14 +208,14 @@ void main(uint3 DTid: SV_DispatchThreadID)
 		{
 			bool cellStable = IsCellActivatedStability(cellNumber);
 
-			bool leftPartStable        = cellNumber.x > 0                                               && IsCellActivatedStability(cellNumber + int2(-1,  0));
-			bool rightPartStable       = cellNumber.x < gBoardSize - 1                                  && IsCellActivatedStability(cellNumber + int2( 1,  0));
-			bool topPartStable         =                                  cellNumber.y > 0              && IsCellActivatedStability(cellNumber + int2( 0, -1));
-			bool bottomPartStable      =                                  cellNumber.y < gBoardSize - 1 && IsCellActivatedStability(cellNumber + int2( 0,  1));
-			bool leftTopPartStable     = cellNumber.x > 0              && cellNumber.y > 0              && IsCellActivatedStability(cellNumber + int2(-1, -1));
-			bool rightTopPartStable    = cellNumber.x < gBoardSize - 1 && cellNumber.y > 0              && IsCellActivatedStability(cellNumber + int2( 1, -1));
-			bool leftBottomPartStable  = cellNumber.y < gBoardSize - 1 && cellNumber.x > 0              && IsCellActivatedStability(cellNumber + int2(-1,  1));
-			bool rightBottomPartStable = cellNumber.x < gBoardSize - 1 && cellNumber.y < gBoardSize - 1 && IsCellActivatedStability(cellNumber + int2( 1,  1));
+			bool leftPartStable        = nonLeftEdge        && IsCellActivatedStability(leftCell);
+			bool rightPartStable       = nonRightEdge       && IsCellActivatedStability(rightCell);
+			bool topPartStable         = nonTopEdge         && IsCellActivatedStability(topCell);
+			bool bottomPartStable      = nonBottomEdge      && IsCellActivatedStability(bottomCell);
+			bool leftTopPartStable     = nonLeftTopEdge     && IsCellActivatedStability(leftTopCell);
+			bool rightTopPartStable    = nonRightTopEdge    && IsCellActivatedStability(rightTopCell);
+			bool leftBottomPartStable  = nonLeftBottomEdge  && IsCellActivatedStability(leftBottomCell);
+			bool rightBottomPartStable = nonRightBottomEdge && IsCellActivatedStability(rightBottomCell);
 
 			bool surroundUnstable = !leftPartStable && !rightPartStable && !topPartStable && !bottomPartStable && !leftTopPartStable && !rightTopPartStable && !leftBottomPartStable && !rightBottomPartStable;
 
