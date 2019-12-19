@@ -5,3 +5,14 @@
 /.vs/LightsOut/v16
 /LightsOut/x64/Release
 /x64/Release
+/.vs/LightsOut
+/LightsOut/Release
+/LightsOut/x64/Debug
+/LightsOut/Debug
+/Debug
+/Release
+/TrueRelease
+/x64/Debug
+*.db
+*.sdf
+*.suo
