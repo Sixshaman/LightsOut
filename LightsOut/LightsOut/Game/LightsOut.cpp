@@ -186,7 +186,7 @@ bool LightsOutApp::InitMenu()
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_SQUARES,   L"Squares");
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_CIRCLES,   L"Circles");
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_DIAMONDS,  L"Diamonds");
-	AppendMenu(MenuView, MF_STRING, MENU_VIEW_BEAMS,     L"Beams");
+	AppendMenu(MenuView, MF_STRING, MENU_VIEW_BEAMS,     L"BEAMS");
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_RAINDROPS, L"Raindrops");
 	AppendMenu(MenuView, MF_STRING, MENU_VIEW_CHAINS,    L"Chains");
 
