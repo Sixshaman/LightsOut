@@ -27,12 +27,12 @@ LightsOutRenderer::LightsOutRenderer(HWND hwnd): mDrawType(DrawType::DRAW_SQUARE
 	scDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
 	scDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_PROGRESSIVE;
 	scDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	scDesc.BufferCount = 1;
+	scDesc.BufferCount = 2;
 	scDesc.OutputWindow = hwnd;
 	scDesc.SampleDesc.Count = 1;
 	scDesc.SampleDesc.Quality = 0;
 	scDesc.Windowed = true;
-	scDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+	scDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 	scDesc.Flags = 0;
 
 	ThrowIfFailed(D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, flags, nullptr, 0, D3D11_SDK_VERSION,
@@ -99,7 +99,7 @@ bool LightsOutRenderer::OnWndResize(uint16_t newWidth, uint16_t newHeight)
 	mRenderTarget.Reset();
 	mDepthStencilView.Reset();
 
-	ThrowIfFailed(mSwapChain->ResizeBuffers(1, newWidth, newHeight, DXGI_FORMAT_R8G8B8A8_UNORM, 0));
+	ThrowIfFailed(mSwapChain->ResizeBuffers(2, newWidth, newHeight, DXGI_FORMAT_R8G8B8A8_UNORM, 0));
 
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> backBuffer;
 	mSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(backBuffer.GetAddressOf()));
@@ -415,6 +415,9 @@ void LightsOutRenderer::DrawBoardOnTexture(uint16_t cellSize, uint16_t gameSize)
 
 void LightsOutRenderer::DrawBoardTexOnScreen()
 {
+	ID3D11RenderTargetView* rtvs[] = {mRenderTarget.Get()};
+	md3dContext->OMSetRenderTargets(1, rtvs, mDepthStencilView.Get());
+
 	FLOAT clearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
 	md3dContext->ClearRenderTargetView(mRenderTarget.Get(), clearColor);
