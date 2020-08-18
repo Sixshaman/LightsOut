@@ -7,16 +7,22 @@
 #include "..\Saving\FileDialog.hpp"
 #include "LightsOutBoardGen.hpp"
 
-#define IS_RANDOM_SOLVING       0x001 //Call LightsOutSolver::GetRandomTurn() instead of LightsOutSolver::GetFirstTurn()
-#define SHOW_SOLUTION           0x002 //Show the whole solution with special color
-#define SHOW_INVERSE_SOLUTION   0x004 //Show the whole anti-solution with special color
-#define SHOW_STABILITY          0x008 //Show the cell stability data
-#define SHOW_LIT_STABILITY      0x010 //Show the cell stability data for lit cells
-#define IS_PERIOD_COUNTING      0x020 //Replace the board with the solution each tick
-#define IS_EIGVEC_COUNTING      0x040 //Replace the board with the special buffer each tick. After enough ticks you get the eigenvector of the board
-#define IS_PERIO4_COUNTING      0x080 //Replace the board with the solution of the solution of the solution of the solution each tick
-#define IS_PERIOD_BACK_COUNTING 0x100 //Replace the board with the anti-solution each tick
-#define DISPLAY_PERIOD_COUNT    0x200 //Display the period count when counting finished/stopped
+#ifdef USE_PNG_SAVER
+
+#include <libpng16/png.h>
+
+#endif // USE_PNG_SAVER
+
+#define IS_RANDOM_SOLVING          0x001 //Call LightsOutSolver::GetRandomTurn() instead of LightsOutSolver::GetFirstTurn()
+#define SHOW_SOLUTION              0x002 //Show the whole solution with special color
+#define SHOW_INVERSE_SOLUTION      0x004 //Show the whole anti-solution with special color
+#define SHOW_STABILITY             0x008 //Show the cell stability data
+#define SHOW_LIT_STABILITY         0x010 //Show the cell stability data for lit cells
+#define IS_PERIOD_COUNTING         0x020 //Replace the board with the solution each tick
+#define IS_EIGVEC_COUNTING         0x040 //Replace the board with the special buffer each tick. After enough ticks you get the eigenvector of the board
+#define IS_PERIO4_COUNTING         0x080 //Replace the board with the solution of the solution of the solution of the solution each tick
+#define IS_PERIOD_BACK_COUNTING    0x100 //Replace the board with the anti-solution each tick
+#define DISPLAY_PERIOD_COUNT       0x200 //Display the period count when counting finished/stopped
 
 #define MENU_THEME_RED_EXPLOSION	  1001
 #define MENU_THEME_NEON_XXL			  1002
@@ -45,6 +51,8 @@
 #define MENU_FILE_SAVE_STATE_16X	  3003
 #define MENU_FILE_SAVE_STATE_05X	  3004
 #define MENU_FILE_SAVE_STATE_01X	  3005
+
+#define MENU_FILE_ENABLE_SOLUTION_STREAMING 3100
 
 #define MENU_SPECIAL 4001
 
@@ -204,6 +212,14 @@ bool LightsOutApp::InitMenu()
 	AppendMenu(MenuFile, MF_STRING, MENU_FILE_SAVE_STATE_16X, L"Save state 16x  size...");
 	AppendMenu(MenuFile, MF_STRING, MENU_FILE_SAVE_STATE_05X, L"Save state 0.5x size...");
 	AppendMenu(MenuFile, MF_STRING, MENU_FILE_SAVE_STATE_01X, L"Save state 0.1x size...");
+
+#ifdef USE_PNG_SAVER
+
+	AppendMenu(MenuFile, MF_MENUBREAK, 0, nullptr);
+	
+	AppendMenu(MenuFile, MF_STRING, MENU_FILE_ENABLE_SOLUTION_STREAMING, L"Enable/disable solution streaming");
+
+#endif // 
 
 	//=============================================================================================
 
@@ -426,6 +442,20 @@ void LightsOutApp::OnMenuItem(WPARAM State)
 		SaveBoard(EXPECTED_WND_SIZE / 10);
 		break;
 	}
+	case MENU_FILE_ENABLE_SOLUTION_STREAMING:
+	{
+		if(mSolutionStreamFolder.empty())
+		{
+			FileDialog::GetFolderToSave(mMainWnd, mSolutionStreamFolder);
+			SaveVideoFrameSilent(1024, mSolutionStreamFolder);
+		}
+		else
+		{
+			mSolutionStreamFolder.clear();
+		}
+
+		break;
+	}
 	case MENU_SPECIAL:
 	{
 		Special();
@@ -490,6 +520,12 @@ void LightsOutApp::Update()
 	if(mFlags & IS_EIGVEC_COUNTING)
 	{
 		EigvecCountTick();
+	}
+
+	uint32_t solStreamFlags = (IS_PERIOD_COUNTING | IS_PERIOD_BACK_COUNTING | IS_PERIO4_COUNTING | IS_EIGVEC_COUNTING);
+	if(!mSolutionStreamFolder.empty() && (mFlags & solStreamFlags))
+	{
+		SaveVideoFrameSilent(1024, mSolutionStreamFolder);
 	}
 }
 
@@ -643,6 +679,27 @@ void LightsOutApp::SaveBoardSilent(uint32_t expectedSize, const std::wstring& fi
 	LightsOutSaver::SaveBMP(filePath, &boardData[0], texSize, texSize, boardTexRowPitch);
 
 	mRenderer->ResetBoardSize(mGame.GetSize());
+}
+
+void LightsOutApp::SaveVideoFrameSilent(uint32_t expectedSize, const std::wstring& framesFolder)
+{
+#ifdef USE_PNG_SAVER
+
+	WCHAR frameName[100];
+	swprintf_s(frameName, L"%s%05d.png", L"Frame", mPeriodCount);
+
+	uint32_t cellSize = (uint32_t)(ceilf(expectedSize / mGame.GetSize()) - 1);
+
+	std::vector<uint32_t> boardData;
+	uint32_t boardTexRowPitch;
+	mRenderer->DrawBgBoardToMemory(cellSize, mGame.GetSize(), boardData, boardTexRowPitch);
+
+	uint32_t texSize = mGame.GetSize() * cellSize + 1;
+	LightsOutSaver::SavePNG(framesFolder + L"\\" + frameName, &boardData[0], texSize, texSize, boardTexRowPitch);
+
+	mRenderer->ResetBoardSize(mGame.GetSize());
+
+#endif // USE_PNG_SAVER
 }
 
 void LightsOutApp::OnMouseClick(WPARAM btnState, uint32_t xPos, uint32_t yPos)

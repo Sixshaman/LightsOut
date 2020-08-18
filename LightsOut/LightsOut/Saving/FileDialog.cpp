@@ -2,6 +2,7 @@
 #include "..\Util.hpp"
 #include <KnownFolders.h>
 #include <wrl\client.h>
+#include <regex>
 
 bool FileDialog::GetPictureToSave(HWND wnd, std::wstring& filename)
 {
@@ -11,25 +12,15 @@ bool FileDialog::GetPictureToSave(HWND wnd, std::wstring& filename)
 		{L"All Files (*.*)", L"*.*"}
 	};
 
-	if(!FileSave(wnd, filename, L"Save Picture", fileTypes, ARRAYSIZE(fileTypes)))
-	{
-		return false;
-	}
-
-	return true;
+	return FileDialogHandle(wnd, filename, L"Save Picture", fileTypes, ARRAYSIZE(fileTypes), L"bmp", CLSID_FileSaveDialog);
 }
 
-bool FileDialog::FileSave(HWND wnd, std::wstring& filename, LPWSTR dialogTitle, const COMDLG_FILTERSPEC *fileTypes, uint32_t fileTypesSize)
+bool FileDialog::GetFolderToSave(HWND wnd, std::wstring& filename)
 {
-	if(!FileDialogHandle(wnd, filename, dialogTitle, fileTypes, fileTypesSize, CLSID_FileSaveDialog))
-	{
-		return false;
-	}
-
-	return true;
+	return FolderDialogHandle(wnd, filename, L"Select folder");
 }
 
-bool FileDialog::FileDialogHandle(HWND wnd, std::wstring& filename, LPWSTR dialogTitle, const COMDLG_FILTERSPEC *fileTypes, uint32_t fileTypesSize, const CLSID dialogType)
+bool FileDialog::FileDialogHandle(HWND wnd, std::wstring& filename, LPWSTR dialogTitle, const COMDLG_FILTERSPEC* fileTypes, uint32_t fileTypesSize, const std::wstring& defaultFileType, const CLSID dialogType)
 {
 	Microsoft::WRL::ComPtr<IFileDialog> pFileDialog;
 	ThrowIfFailed(CoCreateInstance(dialogType, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pFileDialog)));
@@ -71,10 +62,48 @@ bool FileDialog::FileDialogHandle(HWND wnd, std::wstring& filename, LPWSTR dialo
 	filename = std::wstring(filePath);
 	CoTaskMemFree(filePath);
 
-	if(filename.size() <= 3 || filename.substr(filename.length() - 4, 4) != L".bmp")
+	std::wregex re(L".*\\." + defaultFileType); //Check if extension is present
+	if(!std::regex_match(filename, re))
 	{
-		filename += L".bmp";
+		filename += (L"." + defaultFileType);
 	}
+
+	return true;
+}
+
+bool FileDialog::FolderDialogHandle(HWND wnd, std::wstring& filename, LPWSTR dialogTitle)
+{
+	Microsoft::WRL::ComPtr<IFileDialog> pFileDialog;
+	ThrowIfFailed(CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&pFileDialog)));
+
+	DWORD options = 0;
+	ThrowIfFailed(pFileDialog->GetOptions(&options));
+	ThrowIfFailed(pFileDialog->SetOptions(options | FOS_PICKFOLDERS));
+
+	Microsoft::WRL::ComPtr<IShellItem> pShellFolder;
+	ThrowIfFailed(SHCreateItemInKnownFolder(FOLDERID_Pictures, 0, nullptr, IID_PPV_ARGS(&pShellFolder)));
+	ThrowIfFailed(pFileDialog->SetFolder(pShellFolder.Get()));
+
+	ThrowIfFailed(pFileDialog->SetTitle(dialogTitle));
+
+	HRESULT hr = pFileDialog->Show(wnd);
+	if(hr != HRESULT_FROM_WIN32(ERROR_CANCELLED))
+	{	
+		ThrowIfFailed(hr);
+	}
+	else
+	{
+		return false;
+	}
+
+	Microsoft::WRL::ComPtr<IShellItem> pShellResult;
+	ThrowIfFailed(pFileDialog->GetResult(&pShellResult));
+
+	PWSTR filePath = nullptr;
+	ThrowIfFailed(pShellResult->GetDisplayName(SIGDN_FILESYSPATH, &filePath));
+
+	filename = std::wstring(filePath);
+	CoTaskMemFree(filePath);
 
 	return true;
 }

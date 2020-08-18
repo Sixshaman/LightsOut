@@ -83,6 +83,7 @@ private:
 
 	void SaveBoard(uint32_t expectedSize);
 	void SaveBoardSilent(uint32_t expectedSize, const std::wstring& filepath);
+	void SaveVideoFrameSilent(uint32_t expectedSize, const std::wstring& framesFolder);
 
 	void OnMenuItem(WPARAM State);
 	void OnKeyReleased(WPARAM key);
@@ -139,6 +140,8 @@ private:
 	int          mWndWidth;
 	int          mWndHeight;
 	std::wstring mWindowTitle;
+
+	std::wstring mSolutionStreamFolder;
 
 	uint32_t mFlags; //Some flags for showing the board
 };

@@ -34,6 +34,9 @@
     <Filter Include="Saving">
       <UniqueIdentifier>{3a629128-4933-4847-be6d-c77e598c84c4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="PNG">
+      <UniqueIdentifier>{a680a39b-dcbf-43aa-a269-c055e6ce732e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="LightsOut\main.cpp">
@@ -96,6 +99,12 @@
     <ClCompile Include="LightsOut\Util.cpp">
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
+    <ClCompile Include="LightsOut\PNG\PNGSaver.cpp">
+      <Filter>PNG</Filter>
+    </ClCompile>
+    <ClCompile Include="LightsOut\PNG\FileHandle.cpp">
+      <Filter>PNG</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="LightsOut\Util.hpp">
@@ -149,6 +158,12 @@
     <ClInclude Include="LightsOut\Math\LightsOutBoard.hpp">
       <Filter>Math</Filter>
     </ClInclude>
+    <ClInclude Include="LightsOut\PNG\PNGSaver.hpp">
+      <Filter>PNG</Filter>
+    </ClInclude>
+    <ClInclude Include="LightsOut\PNG\FileHandle.hpp">
+      <Filter>PNG</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="LightsOut\Shaders\Compute\ComputeEveryBoard.hlsl">
@@ -193,10 +208,5 @@
     <FxCompile Include="LightsOut\Shaders\Compute\ComputeEveryBoardBeams.hlsl">
       <Filter>Shaders\Compute</Filter>
     </FxCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="LightsOut.rc">
-      <Filter>Файлы ресурсов</Filter>
-    </ResourceCompile>
   </ItemGroup>
 </Project>

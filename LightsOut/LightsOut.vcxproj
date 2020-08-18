@@ -123,7 +123,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;USE_PNG_SAVER;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -157,7 +157,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;USE_PNG_SAVER;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -227,6 +227,8 @@
     <ClCompile Include="LightsOut\Math\LightsOutMatrix.cpp" />
     <ClCompile Include="LightsOut\Math\LightsOutNaryBoardImpl.cpp" />
     <ClCompile Include="LightsOut\Math\LightsOutSolver.cpp" />
+    <ClCompile Include="LightsOut\PNG\FileHandle.cpp" />
+    <ClCompile Include="LightsOut\PNG\PNGSaver.cpp" />
     <ClCompile Include="LightsOut\Saving\FileDialog.cpp" />
     <ClCompile Include="LightsOut\Saving\LOSaver.cpp" />
     <ClCompile Include="LightsOut\Util.cpp" />
@@ -246,6 +248,8 @@
     <ClInclude Include="LightsOut\Math\LightsOutClickRules.hpp" />
     <ClInclude Include="LightsOut\Math\LightsOutMatrix.hpp" />
     <ClInclude Include="LightsOut\Math\LightsOutSolver.hpp" />
+    <ClInclude Include="LightsOut\PNG\FileHandle.hpp" />
+    <ClInclude Include="LightsOut\PNG\PNGSaver.hpp" />
     <ClInclude Include="LightsOut\Saving\FileDialog.hpp" />
     <ClInclude Include="LightsOut\Saving\LOSaver.hpp" />
     <ClInclude Include="LightsOut\Util.hpp" />

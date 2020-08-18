@@ -1,8 +1,7 @@
 #include "LOSaver.hpp"
 #include "..\Graphics\LOTextures.hpp"
 #include "..\Util.hpp"
-#include <wincodec.h>
-#include <gdiplus.h>
+#include "..\PNG\PNGSaver.hpp"
 #include <memory>
 
 void LightsOutSaver::SaveBMP(const std::wstring& filename, uint32_t* data, uint32_t width, uint32_t height, uint32_t rowPitch)
@@ -64,12 +63,8 @@ void LightsOutSaver::SaveBMP(const std::wstring& filename, uint32_t* data, uint3
 	CloseHandle(hFile);
 }
 
-//======== UNDER CONSTRUCTION ========//
 void LightsOutSaver::SavePNG(const std::wstring& filename, uint32_t* data, uint32_t width, uint32_t height, uint32_t rowPitch)
 {
-	//Gdiplus::GdiplusStartupInput startupInput;
-	//ULONG_PTR                    startupToken;
-	//GdiplusStartup(&startupToken, &startupInput, nullptr);
-
-	//std::unique_ptr<Gdiplus::Image> image;
+	PngSaver pngSaver;
+	pngSaver.SavePngImage(filename, width, height, rowPitch, data);
 }

@@ -15,11 +15,12 @@ class FileDialog
 public:
 	static bool GetPictureToSave(HWND wnd, std::wstring& filename);
 
-private:
-	static bool FileSave(HWND wnd, std::wstring& filename, LPWSTR dialogTitle, const  COMDLG_FILTERSPEC *fileTypes, uint32_t fileTypesSize);
+	static bool GetFolderToSave(HWND wnd, std::wstring& filename);
 
-	static bool FileDialogHandle(HWND wnd, std::wstring& filename, LPWSTR dialogTitle, const COMDLG_FILTERSPEC *fileTypes,
-								 uint32_t fileTypesSize, const CLSID dialogType);
+private:
+	static bool FileDialogHandle(HWND wnd, std::wstring& filename, LPWSTR dialogTitle, const COMDLG_FILTERSPEC *fileTypes, uint32_t fileTypesSize, const std::wstring& defaultFileType, const CLSID dialogType);
+
+	static bool FolderDialogHandle(HWND wnd, std::wstring& filename, LPWSTR dialogTitle);
 };
 
 #endif FILEDIALOG_HPP
